@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-message EtherboyCreateAccount {
+message EtherboyCreateAccountTx {
 // public is a json object that the dApp can look into
 	bytes data = 1;
 }
 
-message EtherboyState {
+message EtherboyStateTx {
 	bytes data = 1;
 }
 
@@ -14,9 +14,15 @@ message EtherboyAppTx {
 	int32 version = 1;
 // dispatch based on different transaction types
 	string type = 2;
+    string owner = 3;
 // the actual message body
 	oneof data {
-		EtherboyCreateAccount create_account = 16;
-		EtherboyState state = 3;
+		EtherboyCreateAccountTx create_account = 16;
+		EtherboyStateTx state = 8;
 	}		
+}
+
+message EtherboyAppState {
+    bytes address = 1;
+    bytes blob = 2;
 }
