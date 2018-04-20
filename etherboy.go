@@ -1,13 +1,16 @@
 package main
 
 import (
+	"log"
+
 	"github.com/pkg/errors"
+
+	"strings"
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/loomnetwork/etherboy-core/gen"
 	"github.com/loomnetwork/loom"
 	"github.com/loomnetwork/loom/plugin"
-	"strings"
 )
 
 func main() {
@@ -29,6 +32,7 @@ func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 }
 
 func (e *EtherBoy) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
+	log.Println("Entering Etherboy contract")
 	var tx txmsg.EtherboyAppTx
 	proto.Unmarshal(req.Body, &tx)
 	owner := strings.TrimSpace(tx.Owner)
