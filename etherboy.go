@@ -23,9 +23,9 @@ func (e *EtherBoy) Meta() plugin.Meta {
 	}
 }
 
-func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
+func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 	println("init contract")
-	return &plugin.Response{}, nil
+	return nil
 }
 
 func (e *EtherBoy) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
