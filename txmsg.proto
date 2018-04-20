@@ -12,17 +12,17 @@ message EtherboyStateTx {
 message EtherboyAppTx {
 // version to help upgrades to code
 	int32 version = 1;
-// dispatch based on different transaction types
-	string type = 2;
-    string owner = 3;
+
+	string owner = 2;
+
 // the actual message body
 	oneof data {
 		EtherboyCreateAccountTx create_account = 16;
 		EtherboyStateTx state = 8;
-	}		
+	}
 }
 
 message EtherboyAppState {
-    bytes address = 1;
-    bytes blob = 2;
+	bytes address = 1;
+	bytes blob = 2;
 }

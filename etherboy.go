@@ -4,11 +4,11 @@ package main
 import (
 	"github.com/pkg/errors"
 
-	"github.com/loomnetwork/etherboy-core/gen"
-	"github.com/loomnetwork/loom/plugin"
 	proto "github.com/golang/protobuf/proto"
-	"strings"
+	"github.com/loomnetwork/etherboy-core/gen"
 	"github.com/loomnetwork/loom"
+	"github.com/loomnetwork/loom/plugin"
+	"strings"
 )
 
 func main() {
@@ -33,15 +33,15 @@ func (e *EtherBoy) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Respon
 	var tx txmsg.EtherboyAppTx
 	proto.Unmarshal(req.Body, &tx)
 	owner := strings.TrimSpace(tx.Owner)
-	switch tx.Type {
-	case "CreateAccount":
+	switch tx.Data.(type) {
+	case *txmsg.EtherboyAppTx_CreateAccount:
 		createAccTx := tx.GetCreateAccount()
 		if err := e.createAccount(ctx, owner, createAccTx); err != nil {
 			return e.jsonResponse(), err
 		}
-	case "SaveState":
+	case *txmsg.EtherboyAppTx_State:
 		saveStateTx := tx.GetState()
-		if err:= e.saveState(ctx, owner, saveStateTx); err != nil {
+		if err := e.saveState(ctx, owner, saveStateTx); err != nil {
 			return e.jsonResponse(), err
 		}
 	}
@@ -51,7 +51,7 @@ func (e *EtherBoy) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Respon
 func (e *EtherBoy) jsonResponse() *plugin.Response {
 	return &plugin.Response{
 		ContentType: plugin.ContentType_JSON,
-		Body: []byte("{}"),
+		Body:        []byte("{}"),
 	}
 }
 
@@ -68,7 +68,7 @@ func (e *EtherBoy) createAccount(ctx plugin.Context, owner string, accTx *txmsg.
 	if ctx.Has(e.ownerKey(owner)) {
 		return errors.New("Owner already exists")
 	}
-	state := &txmsg.EtherboyAppState {
+	state := &txmsg.EtherboyAppState{
 		Address: []byte(ctx.Message().Sender.Local),
 	}
 	statebytes, err := proto.Marshal(state)
