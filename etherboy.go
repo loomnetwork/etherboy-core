@@ -1,4 +1,3 @@
-// go build -buildmode=plugin -o contracts/helloworld.so plugin/examples/helloworld.go
 package main
 
 import (
