@@ -11,6 +11,8 @@ import (
 	"github.com/loomnetwork/loom/plugin"
 )
 
+func main() {}
+
 type EtherBoy struct {
 	SimpleContract
 }
@@ -27,7 +29,12 @@ func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 	if err != nil {
 		return err
 	}
-	return e.RegisterService(e.CreateAccount, &txmsg.EtherboyCreateAccountTx{})
+	//TODO lets make this an array
+	err = e.RegisterService(e.CreateAccount, &txmsg.EtherboyCreateAccountTx{})
+	if err != nil {
+		return err
+	}
+	return e.RegisterService(e.SaveState, &txmsg.EtherboyStateTx{})
 }
 
 func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {

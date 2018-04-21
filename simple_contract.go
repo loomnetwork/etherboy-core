@@ -16,11 +16,11 @@ type SimpleContract struct {
 }
 
 func (s *SimpleContract) RegisterService(receiver interface{}, name interface{}) error {
-	return d.callbacks.Register(receiver, reflect.TypeOf(name).String(), true)
+	return s.callbacks.Register(receiver, reflect.TypeOf(name).String(), true)
 }
 
 func (s *SimpleContract) SInit(ctx plugin.Context, req *plugin.Request) error {
-	d.callbacks = new(serviceMap)
+	s.callbacks = new(serviceMap)
 	return nil
 }
 
@@ -43,9 +43,9 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 
 	typeName := reflect.TypeOf(tx.Data).String()
 	fmt.Printf("typename -%s\n", typeName)
-	serviceSpec, methodSpec, err := d.callbacks.Get(typeName)
+	serviceSpec, methodSpec, err := s.callbacks.Get(typeName)
 	if err != nil {
-		return d.jsonResponse(), err
+		return s.jsonResponse(), err
 	}
 
 	//Lookup the method we need to call
@@ -64,7 +64,7 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	}
 
 	if errResult != nil {
-		return d.jsonResponse(), errResult
+		return s.jsonResponse(), errResult
 	}
 	return &plugin.Response{}, nil
 }
