@@ -20,6 +20,11 @@ type FakeContext struct {
 	address loom.Address
 	loom.State
 	vm.VM
+	data map[string][]byte
+}
+
+func CreateFakeContext() plugin.Context {
+	return &FakeContext{data: make(map[string][]byte)}
 }
 
 func (c FakeContext) Call(addr loom.Address, input []byte) ([]byte, error) {
@@ -46,7 +51,13 @@ func (c FakeContext) Now() time.Time {
 
 func (c FakeContext) Emit(event []byte) {
 }
-
+func (c FakeContext) Has(key []byte) bool {
+	_, ok := c.data[string(key)]
+	return ok
+}
+func (c FakeContext) Set(key []byte, value []byte) {
+	c.data[string(key)] = value
+}
 func TestCreateAccount(t *testing.T) {
 	tx := &txmsg.EtherboyCreateAccountTx{
 		Data: []byte("dummy"),
@@ -71,7 +82,7 @@ func TestCreateAccount(t *testing.T) {
 
 	e := &EtherBoy{}
 
-	ctx := FakeContext{}
+	ctx := CreateFakeContext()
 	req := &plugin.Request{}
 
 	fmt.Printf("Data: msgBytes-%v\n", msgBytes)
