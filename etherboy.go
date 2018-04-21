@@ -1,22 +1,18 @@
 package main
 
 import (
-	"log"
-
 	"github.com/pkg/errors"
 
-	"strings"
-
 	proto "github.com/golang/protobuf/proto"
-	"github.com/loomnetwork/etherboy-core/gen"
+	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom"
 	"github.com/loomnetwork/loom/plugin"
 )
 
-func main() {
-}
+func main() {}
 
 type EtherBoy struct {
+	SimpleContract
 }
 
 func (e *EtherBoy) Meta() plugin.Meta {
@@ -27,46 +23,15 @@ func (e *EtherBoy) Meta() plugin.Meta {
 }
 
 func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
-	println("init contract")
-	return nil
-}
-
-func (e *EtherBoy) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
-	log.Println("Entering Etherboy contract")
-	var tx txmsg.EtherboyAppTx
-	proto.Unmarshal(req.Body, &tx)
-	owner := strings.TrimSpace(tx.Owner)
-	switch tx.Data.(type) {
-	case *txmsg.EtherboyAppTx_CreateAccount:
-		createAccTx := tx.GetCreateAccount()
-		if err := e.createAccount(ctx, owner, createAccTx); err != nil {
-			return e.jsonResponse(), err
-		}
-	case *txmsg.EtherboyAppTx_State:
-		saveStateTx := tx.GetState()
-		if err := e.saveState(ctx, owner, saveStateTx); err != nil {
-			return e.jsonResponse(), err
-		}
+	err := e.SInit(ctx, req)
+	if err != nil {
+		return err
 	}
-	return &plugin.Response{}, nil
+
+	return e.RegisterService(e)
 }
 
-func (e *EtherBoy) jsonResponse() *plugin.Response {
-	return &plugin.Response{
-		ContentType: plugin.ContentType_JSON,
-		Body:        []byte("{}"),
-	}
-}
-
-func (e *EtherBoy) StaticCall(ctx plugin.StaticContext, req *plugin.Request) (*plugin.Response, error) {
-	return &plugin.Response{}, nil
-}
-
-func (e *EtherBoy) ownerKey(owner string) []byte {
-	return []byte("owner:" + owner)
-}
-
-func (e *EtherBoy) createAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {
+func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {
 	// confirm owner doesnt exist already
 	if ctx.Has(e.ownerKey(owner)) {
 		return errors.New("Owner already exists")
@@ -82,7 +47,7 @@ func (e *EtherBoy) createAccount(ctx plugin.Context, owner string, accTx *txmsg.
 	return nil
 }
 
-func (e *EtherBoy) saveState(ctx plugin.Context, owner string, tx *txmsg.EtherboyStateTx) error {
+func (e *EtherBoy) SaveState(ctx plugin.Context, owner string, tx *txmsg.EtherboyStateTx) error {
 	var curState txmsg.EtherboyAppState
 	proto.Unmarshal(ctx.Get(e.ownerKey(owner)), &curState)
 	if loom.LocalAddress(curState.Address).Compare(ctx.Message().Sender.Local) != 0 {
