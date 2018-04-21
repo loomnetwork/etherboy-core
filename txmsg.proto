@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/any.proto";
+
 message EtherboyCreateAccountTx {
 // public is a json object that the dApp can look into
 	bytes data = 1;
@@ -14,15 +15,10 @@ message SimpleContractMethod {
 	int32 version = 1;
 
 	string owner = 2;
-
+ 
 	string method = 3;
 
 	google.protobuf.Any data = 4;
-	// the actual message body
-//	oneof data {
-//		EtherboyCreateAccountTx create_account = 16;
-//		EtherboyStateTx state = 8;
-//	}
 }
 
 message EtherboyAppState {
