@@ -1,4 +1,5 @@
 // NOTE this file was taken from https://github.com/gorilla/rpc/blob/master/map.go
+// modified highly
 
 // Copyright 2009 The Go Authors. All rights reserved.
 // Copyright 2012 The Gorilla Authors. All rights reserved.
@@ -9,18 +10,19 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"reflect"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/loomnetwork/loom/plugin"
 )
 
 var (
 	// Precompute the reflect.Type of error and http.Request
 	typeOfError   = reflect.TypeOf((*error)(nil)).Elem()
-	typeOfRequest = reflect.TypeOf((*http.Request)(nil)).Elem()
+	typeOfRequest = reflect.TypeOf((*plugin.Context)(nil)).Elem()
 )
 
 // ----------------------------------------------------------------------------
@@ -93,18 +95,21 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 		if mtype.NumIn() != 3+paramOffset {
 			continue
 		}
+		fmt.Printf("looking at %s\n", method.Name)
 
 		// If the service methods accept an HTTP request pointer
 		if passReq {
 			// First argument must be a pointer and must be http.Request.
-			reqType := mtype.In(1)
-			if reqType.Kind() != reflect.Ptr || reqType.Elem() != typeOfRequest {
-				continue
-			}
+			//reqType := mtype.In(1)
+			//if reqType.Kind() == reflect.Ptr || reqType.Elem() != typeOfRequest {
+			//	continue
+			//}
 		}
+		fmt.Printf("2-looking at %s\n", method.Name)
+
 		// Next argument must be a pointer and must be exported.
 		args := mtype.In(1 + paramOffset)
-		if args.Kind() != reflect.Ptr || !isExportedOrBuiltin(args) {
+		if args.Kind() != reflect.String || !isExportedOrBuiltin(args) {
 			continue
 		}
 		// Next argument must be a pointer and must be exported.
@@ -120,9 +125,9 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 			continue
 		}
 		s.methods[method.Name] = &serviceMethod{
-			method:    method,
-			argsType:  args.Elem(),
-			replyType: reply.Elem(),
+			method: method,
+			//argsType:  args.Elem(),
+			//replyType: reply.Elem(),
 		}
 	}
 	if len(s.methods) == 0 {

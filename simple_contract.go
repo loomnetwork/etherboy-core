@@ -15,8 +15,8 @@ type SimpleContract struct {
 	callbacks *serviceMap
 }
 
-func (s *SimpleContract) RegisterService(receiver interface{}, name interface{}) error {
-	return s.callbacks.Register(receiver, reflect.TypeOf(name).String(), true)
+func (s *SimpleContract) RegisterService(receiver interface{}) error {
+	return s.callbacks.Register(receiver, "", true)
 }
 
 func (s *SimpleContract) SInit(ctx plugin.Context, req *plugin.Request) error {
@@ -37,13 +37,14 @@ func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Reques
 
 func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
 	log.Println("Entering Etherboy contract")
-	var tx txmsg.EtherboyAppTx
+	var tx txmsg.SimpleContractMethod
 	proto.Unmarshal(req.Body, &tx)
 	owner := strings.TrimSpace(tx.Owner)
+	fmt.Printf("wtf -%s\n", &tx)
 
 	typeName := reflect.TypeOf(tx.Data).String()
 	fmt.Printf("typename -%s\n", typeName)
-	serviceSpec, methodSpec, err := s.callbacks.Get(typeName)
+	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
 	if err != nil {
 		return s.jsonResponse(), err
 	}

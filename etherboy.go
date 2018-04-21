@@ -29,12 +29,8 @@ func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 	if err != nil {
 		return err
 	}
-	//TODO lets make this an array
-	err = e.RegisterService(e.CreateAccount, &txmsg.EtherboyCreateAccountTx{})
-	if err != nil {
-		return err
-	}
-	return e.RegisterService(e.SaveState, &txmsg.EtherboyStateTx{})
+
+	return e.RegisterService(e)
 }
 
 func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {
