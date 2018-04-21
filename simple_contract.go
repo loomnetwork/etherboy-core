@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -41,10 +40,7 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	var tx txmsg.SimpleContractMethod
 	proto.Unmarshal(req.Body, &tx)
 	owner := strings.TrimSpace(tx.Owner)
-	fmt.Printf("wtf -%s\n", &tx)
 
-	typeName := reflect.TypeOf(tx.Data).String()
-	fmt.Printf("typename -%s\n", typeName)
 	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
 	if err != nil {
 		return s.jsonResponse(), err
@@ -55,9 +51,6 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	if err := ptypes.UnmarshalAny(tx.Data, txData.Interface().(proto.Message)); err != nil {
 		return s.jsonResponse(), err
 	}
-
-	fmt.Printf("typename-txdata -%s\n", txData)
-	fmt.Printf("typename-txdata2 -%T\n", txData)
 
 	//Lookup the method we need to call
 	errValue := methodSpec.method.Func.Call([]reflect.Value{
