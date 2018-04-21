@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	proto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom/plugin"
 )
@@ -16,7 +17,7 @@ type SimpleContract struct {
 }
 
 func (s *SimpleContract) RegisterService(receiver interface{}) error {
-	return s.callbacks.Register(receiver, "", true)
+	return s.callbacks.Register(receiver, "simple", true)
 }
 
 func (s *SimpleContract) SInit(ctx plugin.Context, req *plugin.Request) error {
@@ -49,12 +50,21 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 		return s.jsonResponse(), err
 	}
 
+	txData := reflect.New(methodSpec.argsType)
+
+	if err := ptypes.UnmarshalAny(tx.Data, txData.Interface().(proto.Message)); err != nil {
+		return s.jsonResponse(), err
+	}
+
+	fmt.Printf("typename-txdata -%s\n", txData)
+	fmt.Printf("typename-txdata2 -%T\n", txData)
+
 	//Lookup the method we need to call
 	errValue := methodSpec.method.Func.Call([]reflect.Value{
 		serviceSpec.rcvr,
 		reflect.ValueOf(ctx),
 		reflect.ValueOf(owner),
-		reflect.ValueOf(tx.Data),
+		txData,
 	})
 
 	// Cast the result to error if needed.

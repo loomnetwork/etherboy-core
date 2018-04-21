@@ -3,6 +3,8 @@ package main
 import (
 	//	"go/types"
 
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	proto "github.com/golang/protobuf/proto"
@@ -35,9 +37,13 @@ func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 
 func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {
 	// confirm owner doesnt exist already
-	if ctx.Has(e.ownerKey(owner)) {
-		return errors.New("Owner already exists")
-	}
+	//	if ctx.Has(e.ownerKey(owner)) {
+	//		return errors.New("Owner already exists")
+	//	}
+
+	fmt.Printf("accTx---%v\n", accTx)
+	fmt.Printf("accTx---%T\n", accTx)
+	fmt.Printf("accTx---%v\n", accTx.Data)
 	state := &txmsg.EtherboyAppState{
 		Address: []byte(ctx.Message().Sender.Local),
 	}

@@ -99,6 +99,8 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 
 		// If the service methods accept an HTTP request pointer
 		if passReq {
+			//TODO  validate  plugin.Context
+
 			// First argument must be a pointer and must be http.Request.
 			//reqType := mtype.In(1)
 			//if reqType.Kind() == reflect.Ptr || reqType.Elem() != typeOfRequest {
@@ -107,16 +109,21 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 		}
 		fmt.Printf("2-looking at %s\n", method.Name)
 
+		//Param (2) is a string
+
 		// Next argument must be a pointer and must be exported.
-		args := mtype.In(1 + paramOffset)
-		if args.Kind() != reflect.String || !isExportedOrBuiltin(args) {
-			continue
-		}
+		args := mtype.In(2 + paramOffset)
+		fmt.Printf("3-looking at %v\n", args)
+		fmt.Printf("4-looking at %v\n", args.Kind())
+		//if args.Kind() != reflect.String || !isExportedOrBuiltin(args) {
+		//	continue
+		//}
 		// Next argument must be a pointer and must be exported.
-		reply := mtype.In(2 + paramOffset)
-		if reply.Kind() != reflect.Ptr || !isExportedOrBuiltin(reply) {
-			continue
-		}
+		//reply := mtype.In(2 + paramOffset)
+		//if reply.Kind() != reflect.Ptr || !isExportedOrBuiltin(reply) {
+		//	continue
+		//}
+
 		// Method needs one out: error.
 		if mtype.NumOut() != 1 {
 			continue
@@ -125,8 +132,8 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 			continue
 		}
 		s.methods[method.Name] = &serviceMethod{
-			method: method,
-			//argsType:  args.Elem(),
+			method:   method,
+			argsType: args.Elem(),
 			//replyType: reply.Elem(),
 		}
 	}

@@ -58,10 +58,9 @@ func TestCreateAccount(t *testing.T) {
 	}
 	msg := &txmsg.SimpleContractMethod{
 		Version: 0,
-		//Type:    "CreateAccount",
-		Owner:  "aditya",
-		Method: "CreateAccount",
-		Data:   any,
+		Owner:   "aditya",
+		Method:  "simple.CreateAccount",
+		Data:    any,
 	}
 
 	msgBytes, err := proto.Marshal(msg)
