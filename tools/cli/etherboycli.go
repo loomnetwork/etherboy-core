@@ -1,17 +1,31 @@
 package main
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"strings"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/loomnetwork/etherboy-core/gen"
+	"github.com/loomnetwork/loom"
+	lp "github.com/loomnetwork/loom-plugin"
+	"github.com/loomnetwork/loom/client"
+	"github.com/loomnetwork/loom/plugin"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
-	"log"
-	"io/ioutil"
-	"github.com/loomnetwork/etherboy-core/gen"
-	"github.com/loomnetwork/loom/client"
-	lp "github.com/loomnetwork/loom-plugin"
-	"github.com/gogo/protobuf/proto"
-	"encoding/json"
-	"fmt"
 )
+
+func decodeHexString(s string) ([]byte, error) {
+	if !strings.HasPrefix(s, "0x") {
+		return nil, errors.New("string has no hex prefix")
+	}
+
+	return hex.DecodeString(s[2:])
+}
 
 func main() {
 	var publicFile string
@@ -26,18 +40,25 @@ func main() {
 		Use:   "create-acct",
 		Short: "send a transaction",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			privKey, err := ioutil.ReadFile(privFile)
+			// Vadim: I commented this out since I didn't feel like debugging potential
+			// file encoding/formatting issues, just wanted to get the RPC & marshalling sorted out.
+			/*
+				privKey, err := ioutil.ReadFile(privFile)
+				if err != nil {
+					log.Fatalf("Cannot read priv key: %s", privFile)
+				}
+				addr, err := ioutil.ReadFile(publicFile)
+				if err != nil {
+					log.Fatalf("Cannot read address file: %s", publicFile)
+				}
+			*/
+			_, privKey, err := ed25519.GenerateKey(nil)
 			if err != nil {
-				log.Fatalf("Cannot read priv key: %s", privFile)
-			}
-			addr, err := ioutil.ReadFile(publicFile)
-			if err != nil {
-				log.Fatalf("Cannot read address file: %s", publicFile)
+				return err
 			}
 			msg := &txmsg.EtherboyAppTx{
 				Version: 0,
-				Type: "CreateAccount",
-				Owner: "aditya",
+				Owner:   "aditya",
 				Data: &txmsg.EtherboyAppTx_CreateAccount{
 					CreateAccount: &txmsg.EtherboyCreateAccountTx{
 						Data: []byte("dummy"),
@@ -45,9 +66,28 @@ func main() {
 				},
 			}
 			msgBytes, err := proto.Marshal(msg)
+			if err != nil {
+				return err
+			}
+			req := &plugin.Request{
+				ContentType: plugin.ContentType_PROTOBUF3,
+				Body:        msgBytes,
+			}
+			reqBytes, err := proto.Marshal(req)
+			if err != nil {
+				return err
+			}
+			addr, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
+			if err != nil {
+				return err
+			}
+			contractAddr := &loom.Address{
+				ChainID: "default",
+				Local:   loom.LocalAddress(addr),
+			}
 			signer := lp.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("localhost:46657")
-			resp, err := rpcclient.CommitCallTx(addr, []byte("etherboycore"), signer, lp.VMType_PLUGIN, msgBytes)
+			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 47000)
+			resp, err := rpcclient.CommitCallTx(&loom.Address{}, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -74,26 +114,40 @@ func main() {
 			log.Printf("running send with %d", value)
 			msgData := struct {
 				Val int
-			}{ Val: value}
+			}{Val: value}
 			msgJson, err := json.Marshal(msgData)
 			if err != nil {
 				log.Fatal("Cannot generate state json")
 			}
 			msg := &txmsg.EtherboyAppTx{
 				Version: 0,
-				Type: "SetState",
-				Owner: "aditya",
+				Owner:   "aditya",
 				Data: &txmsg.EtherboyAppTx_State{
 					State: &txmsg.EtherboyStateTx{
 						Data: []byte(msgJson),
 					},
-
 				},
 			}
 			msgBytes, err := proto.Marshal(msg)
+			if err != nil {
+				return err
+			}
+			req := &plugin.Request{
+				ContentType: plugin.ContentType_PROTOBUF3,
+				Body:        msgBytes,
+			}
+			reqBytes, err := proto.Marshal(req)
+			if err != nil {
+				return err
+			}
+			contractAddr := &loom.Address{
+				ChainID: "default",
+				Local:   loom.LocalAddress(addr),
+			}
+
 			signer := lp.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("localhost:46657")
-			rpcclient.CommitCallTx(addr, []byte("etherboycore"), signer, lp.VMType_PLUGIN, msgBytes)
+			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 47000)
+			rpcclient.CommitCallTx(&loom.Address{}, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
 
 			return nil
 		},
