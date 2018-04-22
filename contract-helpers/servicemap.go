@@ -64,11 +64,11 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 	if name == "" {
 		s.name = reflect.Indirect(s.rcvr).Type().Name()
 		if !isExported(s.name) {
-			return fmt.Errorf("rpc: type %q is not exported", s.name)
+			return fmt.Errorf("type %q is not exported", s.name)
 		}
 	}
 	if s.name == "" {
-		return fmt.Errorf("rpc: no service name for type %q",
+		return fmt.Errorf("no service name for type %q",
 			s.rcvrType.String())
 	}
 	// Setup methods.
@@ -108,7 +108,7 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 		}
 	}
 	if len(s.methods) == 0 {
-		return fmt.Errorf("rpc: %q has no exported methods of suitable type",
+		return fmt.Errorf("%q has no exported methods of suitable type",
 			s.name)
 	}
 	// Add to the map.
@@ -117,7 +117,7 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 	if m.services == nil {
 		m.services = make(map[string]*service)
 	} else if _, ok := m.services[s.name]; ok {
-		return fmt.Errorf("rpc: service already defined: %q", s.name)
+		return fmt.Errorf("service already defined: %q", s.name)
 	}
 	m.services[s.name] = s
 	return nil
@@ -129,19 +129,19 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 func (m *serviceMap) Get(method string) (*service, *serviceMethod, error) {
 	parts := strings.Split(method, ".")
 	if len(parts) != 2 {
-		err := fmt.Errorf("rpc: service/method request ill-formed: %q", method)
+		err := fmt.Errorf("service/method request ill-formed: %q", method)
 		return nil, nil, err
 	}
 	m.mutex.Lock()
 	service := m.services[parts[0]]
 	m.mutex.Unlock()
 	if service == nil {
-		err := fmt.Errorf("rpc: can't find service %q", method)
+		err := fmt.Errorf("can't find service %q", method)
 		return nil, nil, err
 	}
 	serviceMethod := service.methods[parts[1]]
 	if serviceMethod == nil {
-		err := fmt.Errorf("rpc: can't find method %q", method)
+		err := fmt.Errorf("can't find method %q", method)
 		return nil, nil, err
 	}
 	return service, serviceMethod, nil
