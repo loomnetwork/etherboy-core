@@ -14,12 +14,9 @@ type SimpleContract struct {
 	callbacks *serviceMap
 }
 
-func (s *SimpleContract) RegisterService(serviceName string, receiver interface{}) error {
-	return s.callbacks.Register(receiver, serviceName)
-}
-
-func (s *SimpleContract) Init() {
+func (s *SimpleContract) Init(contract plugin.Contract) error {
 	s.callbacks = new(serviceMap)
+	return s.callbacks.Register(contract, contract.Meta().Name)
 }
 
 func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Request) (*plugin.Response, error) {

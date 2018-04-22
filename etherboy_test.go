@@ -11,7 +11,7 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	e := &EtherBoy{}
+	e := NewEtherBoyContract()
 	tx := &txmsg.EtherboyCreateAccountTx{
 		Version: 0,
 		Owner:   "aditya",
@@ -38,10 +38,6 @@ func TestCreateAccount(t *testing.T) {
 	req := &plugin.Request{}
 
 	fmt.Printf("Data: msgBytes-%v\n", msgBytes)
-	err = e.Init(ctx, req)
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
 
 	req.Body = msgBytes
 	resp, err := e.Call(ctx, req)

@@ -25,8 +25,7 @@ func (e *EtherBoy) Meta() plugin.Meta {
 }
 
 func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
-	e.SimpleContract.Init()
-	return e.RegisterService(e.Meta().Name, e)
+	return nil
 }
 
 func (e *EtherBoy) CreateAccount(ctx plugin.Context, accTx *txmsg.EtherboyCreateAccountTx) error {
@@ -68,4 +67,10 @@ func (s *EtherBoy) ownerKey(owner string) []byte {
 	return []byte("owner:" + owner)
 }
 
-var Contract plugin.Contract = &EtherBoy{}
+func NewEtherBoyContract() plugin.Contract {
+	e := &EtherBoy{}
+	e.SimpleContract.Init(e)
+	return e
+}
+
+var Contract = NewEtherBoyContract()
