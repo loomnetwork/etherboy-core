@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/loomnetwork/etherboy-core/gen"
+	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom"
 	lp "github.com/loomnetwork/loom-plugin"
 	"github.com/loomnetwork/loom/client"
@@ -56,14 +56,8 @@ func main() {
 			if err != nil {
 				return err
 			}
-			msg := &txmsg.EtherboyAppTx{
-				Version: 0,
-				Owner:   "aditya",
-				Data: &txmsg.EtherboyAppTx_CreateAccount{
-					CreateAccount: &txmsg.EtherboyCreateAccountTx{
+			msg := &txmsg.EtherboyCreateAccountTx{
 						Data: []byte("dummy"),
-					},
-				},
 			}
 			msgBytes, err := proto.Marshal(msg)
 			if err != nil {
@@ -119,14 +113,8 @@ func main() {
 			if err != nil {
 				log.Fatal("Cannot generate state json")
 			}
-			msg := &txmsg.EtherboyAppTx{
-				Version: 0,
-				Owner:   "aditya",
-				Data: &txmsg.EtherboyAppTx_State{
-					State: &txmsg.EtherboyStateTx{
+			msg := &txmsg.EtherboyStateTx{
 						Data: []byte(msgJson),
-					},
-				},
 			}
 			msgBytes, err := proto.Marshal(msg)
 			if err != nil {
