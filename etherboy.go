@@ -23,12 +23,8 @@ func (e *EtherBoy) Meta() plugin.Meta {
 }
 
 func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
-	err := e.SInit(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	return e.RegisterService(e)
+	e.SimpleContract.Init()
+	return e.RegisterService(e.Meta().Name, e)
 }
 
 func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {

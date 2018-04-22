@@ -11,6 +11,7 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
+	e := &EtherBoy{}
 	tx := &txmsg.EtherboyCreateAccountTx{
 		Data: []byte("dummy"),
 	}
@@ -22,7 +23,7 @@ func TestCreateAccount(t *testing.T) {
 	msg := &txmsg.SimpleContractMethod{
 		Version: 0,
 		Owner:   "aditya",
-		Method:  "simple.CreateAccount",
+		Method:  fmt.Sprintf("%s.CreateAccount", e.Meta().Name),
 		Data:    any,
 	}
 
@@ -31,8 +32,6 @@ func TestCreateAccount(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-
-	e := &EtherBoy{}
 
 	ctx := CreateFakeContext()
 	req := &plugin.Request{}

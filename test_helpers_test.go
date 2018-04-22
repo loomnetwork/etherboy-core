@@ -8,8 +8,6 @@ import (
 	"github.com/loomnetwork/loom/vm"
 )
 
-type FakeCTX struct {
-}
 type FakeContext struct {
 	caller  loom.Address
 	address loom.Address
