@@ -37,9 +37,9 @@ type service struct {
 }
 
 type serviceMethod struct {
-	method    reflect.Method // receiver method
-	argsType  reflect.Type   // type of the request argument
-	replyType reflect.Type   // type of the response argument
+	method     reflect.Method // receiver method
+	argsType   reflect.Type   // type of the request argument
+	resultType reflect.Type   // type of the response argument
 }
 
 // ----------------------------------------------------------------------------
@@ -94,18 +94,30 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 			continue
 		}
 
-		// Method needs one out: error.
-		if mtype.NumOut() != 1 {
+		// Method must have one or two output, if there's only one it must be error, otherwise
+		// the first output must be a pointer and the second an error.
+		if mtype.NumOut() != 1 && mtype.NumOut() != 2 {
 			continue
 		}
-		if returnType := mtype.Out(0); returnType != typeOfError {
+		if returnType := mtype.Out(mtype.NumOut() - 1); returnType != typeOfError {
 			continue
 		}
-		s.methods[method.Name] = &serviceMethod{
+		if mtype.NumOut() == 2 {
+			if returnType := mtype.Out(0); returnType.Kind() != reflect.Ptr || !isExportedOrBuiltin(returnType) {
+				continue
+			}
+		}
+		srvMethod := &serviceMethod{
 			method:   method,
 			argsType: args.Elem(),
-			//replyType: reply.Elem(),
 		}
+		if mtype.NumOut() == 2 {
+			srvMethod.resultType = mtype.Out(0).Elem()
+		}
+		// TODO: Categorize methods as read-only or not, and add GetReadOnly() to look up read-only
+		// methods. Otherwise you could send a query that gets routed to Contract.Call() and modifies
+		// app state - not good.
+		s.methods[method.Name] = srvMethod
 	}
 	if len(s.methods) == 0 {
 		return fmt.Errorf("%q has no exported methods of suitable type",

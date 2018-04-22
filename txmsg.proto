@@ -13,11 +13,19 @@ message EtherboyStateTx {
 	bytes data = 3;
 }
 
+// TODO: better names for these two
 message SimpleContractMethod {
 	// version to help upgrades to code
 	int32 version = 1;
 	string method = 2;
 	google.protobuf.Any data = 3;
+}
+
+message SimpleContractMethodJSON {
+	// version to help upgrades to code
+	int32 version = 1;
+	string method = 2;
+	bytes data = 3;
 }
 
 message EtherboyAppState {

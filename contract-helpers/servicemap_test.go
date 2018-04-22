@@ -13,6 +13,8 @@ type fakeTx struct{}
 
 type fakeResponse struct{}
 
+type FakeResponse struct{}
+
 type fakeContract struct{}
 
 // These methods SHOULD NOT be auto-registered:
@@ -29,14 +31,19 @@ func (c *fakeContract) IgnoredMethod6(ctx plugin.Context, tx *fakeTx) error {
 	return nil
 }
 
-// func (c *fakeContract) InvalidMethod7(ctx plugin.Context, tx *FakeTx) (*fakeResponse, error) {}
+// And this one is ignored because the return type is not exported
+func (c *fakeContract) InvalidMethod7(ctx plugin.Context, tx *FakeTx) (*fakeResponse, error) {
+	return nil, nil
+}
 
 // These methods SHOULD be auto-registered
 func (c *fakeContract) Method1(ctx plugin.Context, tx *FakeTx) error {
 	return nil
 }
 
-// func (c *fakeContract) ValidMethod2(ctx plugin.Context, tx *FakeTx) (*FakeResponse, error) {}
+func (c *fakeContract) Method2(ctx plugin.Context, tx *FakeTx) (*FakeResponse, error) {
+	return nil, nil
+}
 
 func TestServiceMapDuplicateServices(t *testing.T) {
 	srvMap := new(serviceMap)
@@ -57,14 +64,14 @@ func TestServiceMapAutoDiscovery(t *testing.T) {
 		return
 	}
 
-	for i := 1; i < 7; i++ {
+	for i := 1; i < 8; i++ {
 		methodName := fmt.Sprintf("fakeContract.IgnoredMethod%d", i)
 		if _, _, err := srvMap.Get(methodName); err == nil {
 			t.Errorf("Error: %s should not be registered", methodName)
 		}
 	}
 
-	for i := 1; i < 2; i++ {
+	for i := 1; i < 3; i++ {
 		methodName := fmt.Sprintf("fakeContract.Method%d", i)
 		if _, _, err := srvMap.Get(methodName); err != nil {
 			t.Errorf("Error: %s should be registered", methodName)
