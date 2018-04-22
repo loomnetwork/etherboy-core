@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	proto "github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	proto "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom/plugin"
 )
@@ -18,7 +18,7 @@ func TestCreateAccount(t *testing.T) {
 		Data:    []byte("dummy"),
 	}
 
-	any, err := ptypes.MarshalAny(tx)
+	any, err := types.MarshalAny(tx)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}

@@ -4,8 +4,8 @@ import (
 	"log"
 	"reflect"
 
-	proto "github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	proto "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom/plugin"
 )
@@ -40,7 +40,7 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 
 	txData := reflect.New(methodSpec.argsType)
 
-	if err := ptypes.UnmarshalAny(tx.Data, txData.Interface().(proto.Message)); err != nil {
+	if err := types.UnmarshalAny(tx.Data, txData.Interface().(proto.Message)); err != nil {
 		return nil, err
 	}
 

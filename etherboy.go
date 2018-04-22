@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	proto "github.com/golang/protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
 	contract "github.com/loomnetwork/etherboy-core/contract-helpers"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom"
