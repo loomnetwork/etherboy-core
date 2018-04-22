@@ -3,7 +3,6 @@ package contracthelpers
 import (
 	"log"
 	"reflect"
-	"strings"
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -16,7 +15,7 @@ type SimpleContract struct {
 }
 
 func (s *SimpleContract) RegisterService(serviceName string, receiver interface{}) error {
-	return s.callbacks.Register(receiver, serviceName, true)
+	return s.callbacks.Register(receiver, serviceName)
 }
 
 func (s *SimpleContract) Init() {
@@ -33,8 +32,6 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	if err := proto.Unmarshal(req.Body, &tx); err != nil {
 		return nil, err
 	}
-	// TODO: owner shouldn't be in txmsg.SimpleContractMethod, should be in whatever is type is in tx.Data
-	owner := strings.TrimSpace(tx.Owner)
 
 	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
 	if err != nil {
@@ -51,7 +48,6 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	errValue := methodSpec.method.Func.Call([]reflect.Value{
 		serviceSpec.rcvr,
 		reflect.ValueOf(ctx),
-		reflect.ValueOf(owner),
 		txData,
 	})
 

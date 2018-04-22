@@ -34,7 +34,6 @@ type service struct {
 	rcvr     reflect.Value             // receiver of methods for the service
 	rcvrType reflect.Type              // type of the receiver
 	methods  map[string]*serviceMethod // registered methods
-	passReq  bool
 }
 
 type serviceMethod struct {
@@ -54,14 +53,13 @@ type serviceMap struct {
 }
 
 // register adds a new service using reflection to extract its methods.
-func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error {
+func (m *serviceMap) Register(rcvr interface{}, name string) error {
 	// Setup service.
 	s := &service{
 		name:     name,
 		rcvr:     reflect.ValueOf(rcvr),
 		rcvrType: reflect.TypeOf(rcvr),
 		methods:  make(map[string]*serviceMethod),
-		passReq:  passReq,
 	}
 	if name == "" {
 		s.name = reflect.Indirect(s.rcvr).Type().Name()
@@ -78,53 +76,23 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 		method := s.rcvrType.Method(i)
 		mtype := method.Type
 
-		// offset the parameter indexes by one if the service methods accept a context
-		var paramOffset int
-		if passReq {
-			paramOffset = 1
-		} else {
-			paramOffset = 0
-		}
-
 		// Method must be exported.
 		if method.PkgPath != "" {
 			continue
 		}
-		// Method needs four ins: receiver, plugin.Context, *args, *reply.
-		if mtype.NumIn() != 3+paramOffset {
+
+		// Method needs four ins: receiver, plugin.Context, *args.
+		if mtype.NumIn() != 3 {
 			continue
 		}
-		fmt.Printf("looking at %s\n", method.Name)
 
-		// If the service methods accept a context
-		if passReq {
-			//TODO  validate  plugin.Context
+		// TODO: validate plugin.Context?
 
-			// First argument must be a pointer and must be http.Request.
-			//reqType := mtype.In(1)
-			//if reqType.Kind() == reflect.Ptr || reqType.Elem() != typeOfRequest {
-			//	continue
-			//}
+		// Third argument must be a pointer and must be exported.
+		args := mtype.In(2)
+		if args.Kind() != reflect.Ptr || !isExportedOrBuiltin(args) {
+			continue
 		}
-		fmt.Printf("2-looking at %s\n", method.Name)
-
-		// TODO: currently this assumes that mtype.In(2 + paramOffset) is the "owner" string,
-		// this will need to be fixed when I remove owner
-
-		//Param (2) is a string
-
-		// Next argument must be a pointer and must be exported.
-		args := mtype.In(2 + paramOffset)
-		fmt.Printf("3-looking at %v\n", args)
-		fmt.Printf("4-looking at %v\n", args.Kind())
-		//if args.Kind() != reflect.String || !isExportedOrBuiltin(args) {
-		//	continue
-		//}
-		// Next argument must be a pointer and must be exported.
-		//reply := mtype.In(2 + paramOffset)
-		//if reply.Kind() != reflect.Ptr || !isExportedOrBuiltin(reply) {
-		//	continue
-		//}
 
 		// Method needs one out: error.
 		if mtype.NumOut() != 1 {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	proto "github.com/golang/protobuf/proto"
 	contract "github.com/loomnetwork/etherboy-core/contract-helpers"
 	"github.com/loomnetwork/etherboy-core/txmsg"
@@ -27,7 +29,8 @@ func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {
 	return e.RegisterService(e.Meta().Name, e)
 }
 
-func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.EtherboyCreateAccountTx) error {
+func (e *EtherBoy) CreateAccount(ctx plugin.Context, accTx *txmsg.EtherboyCreateAccountTx) error {
+	owner := strings.TrimSpace(accTx.Owner)
 	// confirm owner doesnt exist already
 	if ctx.Has(e.ownerKey(owner)) {
 		return errors.New("Owner already exists")
@@ -43,9 +46,12 @@ func (e *EtherBoy) CreateAccount(ctx plugin.Context, owner string, accTx *txmsg.
 	return nil
 }
 
-func (e *EtherBoy) SaveState(ctx plugin.Context, owner string, tx *txmsg.EtherboyStateTx) error {
+func (e *EtherBoy) SaveState(ctx plugin.Context, tx *txmsg.EtherboyStateTx) error {
+	owner := strings.TrimSpace(tx.Owner)
 	var curState txmsg.EtherboyAppState
-	proto.Unmarshal(ctx.Get(e.ownerKey(owner)), &curState)
+	if err := proto.Unmarshal(ctx.Get(e.ownerKey(owner)), &curState); err != nil {
+		return err
+	}
 	if loom.LocalAddress(curState.Address).Compare(ctx.Message().Sender.Local) != 0 {
 		return errors.New("Owner unverified")
 	}

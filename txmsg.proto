@@ -2,23 +2,22 @@ syntax = "proto3";
 import "google/protobuf/any.proto";
 
 message EtherboyCreateAccountTx {
-// public is a json object that the dApp can look into
-	bytes data = 1;
+	int32 version = 1;
+	string owner = 2;
+	bytes data = 3;
 }
 
 message EtherboyStateTx {
-	bytes data = 1;
+	int32 version = 1;
+	string owner = 2;
+	bytes data = 3;
 }
 
 message SimpleContractMethod {
-// version to help upgrades to code
+	// version to help upgrades to code
 	int32 version = 1;
-
-	string owner = 2;
- 
-	string method = 3;
-
-	google.protobuf.Any data = 4;
+	string method = 2;
+	google.protobuf.Any data = 3;
 }
 
 message EtherboyAppState {

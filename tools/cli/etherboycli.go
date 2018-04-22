@@ -57,7 +57,9 @@ func main() {
 				return err
 			}
 			msg := &txmsg.EtherboyCreateAccountTx{
-						Data: []byte("dummy"),
+				Version: 0,
+				Owner:   "aditya",
+				Data:    []byte("dummy"),
 			}
 			msgBytes, err := proto.Marshal(msg)
 			if err != nil {
@@ -114,7 +116,9 @@ func main() {
 				log.Fatal("Cannot generate state json")
 			}
 			msg := &txmsg.EtherboyStateTx{
-						Data: []byte(msgJson),
+				Version: 0,
+				Owner:   "aditya",
+				Data:    []byte(msgJson),
 			}
 			msgBytes, err := proto.Marshal(msg)
 			if err != nil {

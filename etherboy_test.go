@@ -13,7 +13,9 @@ import (
 func TestCreateAccount(t *testing.T) {
 	e := &EtherBoy{}
 	tx := &txmsg.EtherboyCreateAccountTx{
-		Data: []byte("dummy"),
+		Version: 0,
+		Owner:   "aditya",
+		Data:    []byte("dummy"),
 	}
 
 	any, err := ptypes.MarshalAny(tx)
@@ -22,7 +24,6 @@ func TestCreateAccount(t *testing.T) {
 	}
 	msg := &txmsg.SimpleContractMethod{
 		Version: 0,
-		Owner:   "aditya",
 		Method:  fmt.Sprintf("%s.CreateAccount", e.Meta().Name),
 		Data:    any,
 	}
