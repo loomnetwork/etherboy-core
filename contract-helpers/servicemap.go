@@ -6,7 +6,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package contracthelpers
 
 import (
 	"fmt"
@@ -78,8 +78,7 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 		method := s.rcvrType.Method(i)
 		mtype := method.Type
 
-		// offset the parameter indexes by one if the
-		// service methods accept an HTTP request pointer
+		// offset the parameter indexes by one if the service methods accept a context
 		var paramOffset int
 		if passReq {
 			paramOffset = 1
@@ -91,13 +90,13 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 		if method.PkgPath != "" {
 			continue
 		}
-		// Method needs four ins: receiver, *http.Request, *args, *reply.
+		// Method needs four ins: receiver, plugin.Context, *args, *reply.
 		if mtype.NumIn() != 3+paramOffset {
 			continue
 		}
 		fmt.Printf("looking at %s\n", method.Name)
 
-		// If the service methods accept an HTTP request pointer
+		// If the service methods accept a context
 		if passReq {
 			//TODO  validate  plugin.Context
 
@@ -108,6 +107,9 @@ func (m *serviceMap) Register(rcvr interface{}, name string, passReq bool) error
 			//}
 		}
 		fmt.Printf("2-looking at %s\n", method.Name)
+
+		// TODO: currently this assumes that mtype.In(2 + paramOffset) is the "owner" string,
+		// this will need to be fixed when I remove owner
 
 		//Param (2) is a string
 

@@ -1,4 +1,4 @@
-package main
+package contracthelpers
 
 import (
 	"log"
@@ -33,6 +33,7 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 	if err := proto.Unmarshal(req.Body, &tx); err != nil {
 		return nil, err
 	}
+	// TODO: owner shouldn't be in txmsg.SimpleContractMethod, should be in whatever is type is in tx.Data
 	owner := strings.TrimSpace(tx.Owner)
 
 	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
@@ -65,8 +66,4 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 		return nil, errResult
 	}
 	return &plugin.Response{}, nil
-}
-
-func (s *SimpleContract) ownerKey(owner string) []byte {
-	return []byte("owner:" + owner)
 }

@@ -1,18 +1,18 @@
 package main
 
 import (
-	"github.com/pkg/errors"
-
 	proto "github.com/golang/protobuf/proto"
+	contract "github.com/loomnetwork/etherboy-core/contract-helpers"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom"
 	"github.com/loomnetwork/loom/plugin"
+	"github.com/pkg/errors"
 )
 
 func main() {}
 
 type EtherBoy struct {
-	SimpleContract
+	contract.SimpleContract
 }
 
 func (e *EtherBoy) Meta() plugin.Meta {
@@ -56,6 +56,10 @@ func (e *EtherBoy) SaveState(ctx plugin.Context, owner string, tx *txmsg.Etherbo
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
 	return nil
+}
+
+func (s *EtherBoy) ownerKey(owner string) []byte {
+	return []byte("owner:" + owner)
 }
 
 var Contract plugin.Contract = &EtherBoy{}
