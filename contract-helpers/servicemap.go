@@ -40,6 +40,7 @@ type serviceMethod struct {
 	method     reflect.Method // receiver method
 	argsType   reflect.Type   // type of the request argument
 	resultType reflect.Type   // type of the response argument
+	readOnly   bool           // should this method be called from Contract.StaticCall?
 }
 
 // ----------------------------------------------------------------------------
@@ -118,10 +119,12 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 		}
 		if mtype.NumOut() == 2 {
 			srvMethod.resultType = mtype.Out(0).Elem()
+			// Currently tx handling methods don't return anything other than errors, so we can
+			// distinguish tx handlers & query handlers based on the number of return values...
+			// That may need to change if tx handlers are allowed to return non-error values at some
+			// point in the future.
+			srvMethod.readOnly = true
 		}
-		// TODO: Categorize methods as read-only or not, and add GetReadOnly() to look up read-only
-		// methods. Otherwise you could send a query that gets routed to Contract.Call() and modifies
-		// app state - not good.
 		s.methods[method.Name] = srvMethod
 	}
 	if len(s.methods) == 0 {
@@ -140,10 +143,12 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 	return nil
 }
 
-// get returns a registered service given a method name.
-//
-// The method name uses a dotted notation as in "Service.Method".
-func (m *serviceMap) Get(method string) (*service, *serviceMethod, error) {
+// Get returns a contract method matching the given name.
+// The method name should be prefixed by the contract plugin name "MyContract.Method".
+// If readOnly is true only methods that can be called via Contract.StaticCall will be matched,
+// these methods cannot modify app state. On the other hand if readOnly is false then only
+// methods that can be called via Contract.Call will be matched, these methods can modify app state.
+func (m *serviceMap) Get(method string, readOnly bool) (*service, *serviceMethod, error) {
 	parts := strings.Split(method, ".")
 	if len(parts) != 2 {
 		err := fmt.Errorf("service/method request ill-formed: %q", method)
@@ -160,6 +165,12 @@ func (m *serviceMap) Get(method string) (*service, *serviceMethod, error) {
 	if serviceMethod == nil {
 		err := fmt.Errorf("can't find method %q", method)
 		return nil, nil, err
+	}
+	if serviceMethod.readOnly != readOnly {
+		if serviceMethod.readOnly {
+			return nil, nil, fmt.Errorf("method %q is read-only", method)
+		}
+		return nil, nil, fmt.Errorf("method %q is not read-only", method)
 	}
 	return service, serviceMethod, nil
 }

@@ -27,7 +27,7 @@ func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Reques
 		if err := json.Unmarshal(req.Body, &query); err != nil {
 			return nil, err
 		}
-		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method)
+		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method, true)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Reques
 		if err := proto.Unmarshal(req.Body, &query); err != nil {
 			return nil, err
 		}
-		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method)
+		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method, true)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.
 		return nil, err
 	}
 
-	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
+	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method, false)
 	if err != nil {
 		return nil, err
 	}
