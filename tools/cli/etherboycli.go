@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	"github.com/loomnetwork/loom"
 	lp "github.com/loomnetwork/loom-plugin"
@@ -61,13 +62,22 @@ func main() {
 				Owner:   "aditya",
 				Data:    []byte("dummy"),
 			}
-			msgBytes, err := proto.Marshal(msg)
+			packedMsg, err := types.MarshalAny(msg)
+			if err != nil {
+				return err
+			}
+			contractTx := &txmsg.SimpleContractMethod{
+				Version: 0,
+				Method:  "etherboycore.CreateAccount",
+				Data:    packedMsg,
+			}
+			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {
 				return err
 			}
 			req := &plugin.Request{
 				ContentType: plugin.ContentType_PROTOBUF3,
-				Body:        msgBytes,
+				Body:        contractTxBytes,
 			}
 			reqBytes, err := proto.Marshal(req)
 			if err != nil {
@@ -99,13 +109,19 @@ func main() {
 		Use:   "set",
 		Short: "set the state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			privKey, err := ioutil.ReadFile(privFile)
+			/*
+				privKey, err := ioutil.ReadFile(privFile)
+				if err != nil {
+					log.Fatalf("Cannot read priv key: %s", privFile)
+				}
+				addr, err := ioutil.ReadFile(publicFile)
+				if err != nil {
+					log.Fatalf("Cannot read address file: %s", publicFile)
+				}
+			*/
+			_, privKey, err := ed25519.GenerateKey(nil)
 			if err != nil {
-				log.Fatalf("Cannot read priv key: %s", privFile)
-			}
-			addr, err := ioutil.ReadFile(publicFile)
-			if err != nil {
-				log.Fatalf("Cannot read address file: %s", publicFile)
+				return err
 			}
 			log.Printf("running send with %d", value)
 			msgData := struct {
@@ -120,15 +136,28 @@ func main() {
 				Owner:   "aditya",
 				Data:    []byte(msgJson),
 			}
-			msgBytes, err := proto.Marshal(msg)
+			packedMsg, err := types.MarshalAny(msg)
+			if err != nil {
+				return err
+			}
+			contractTx := &txmsg.SimpleContractMethod{
+				Version: 0,
+				Method:  "etherboycore.SaveState",
+				Data:    packedMsg,
+			}
+			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {
 				return err
 			}
 			req := &plugin.Request{
 				ContentType: plugin.ContentType_PROTOBUF3,
-				Body:        msgBytes,
+				Body:        contractTxBytes,
 			}
 			reqBytes, err := proto.Marshal(req)
+			if err != nil {
+				return err
+			}
+			addr, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
 			if err != nil {
 				return err
 			}
@@ -136,10 +165,13 @@ func main() {
 				ChainID: "default",
 				Local:   loom.LocalAddress(addr),
 			}
-
 			signer := lp.NewEd25519Signer(privKey)
 			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 47000)
-			rpcclient.CommitCallTx(&loom.Address{}, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
+			resp, err := rpcclient.CommitCallTx(&loom.Address{}, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(resp)
 
 			return nil
 		},
