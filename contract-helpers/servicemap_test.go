@@ -17,6 +17,8 @@ type FakeResponse struct{}
 
 type fakeContract struct{}
 
+type FakeContext interface{}
+
 // These methods SHOULD NOT be auto-registered:
 func (c *fakeContract) IgnoredMethod1()                               {}
 func (c *fakeContract) ignoredMethod2()                               {}
@@ -31,8 +33,18 @@ func (c *fakeContract) IgnoredMethod6(ctx plugin.Context, tx *fakeTx) error {
 	return nil
 }
 
-// And this one is ignored because the return type is not exported
-func (c *fakeContract) InvalidMethod7(ctx plugin.Context, tx *FakeTx) (*fakeResponse, error) {
+// This method is ignored because the return type is not exported
+func (c *fakeContract) IgnoredMethod7(ctx plugin.Context, tx *FakeTx) (*fakeResponse, error) {
+	return nil, nil
+}
+
+// This method is ignored because the first argument in not a plugin context
+func (c *fakeContract) IgnoredMethod8(ctx FakeContext, tx *FakeTx) error {
+	return nil
+}
+
+// Ditto
+func (c *fakeContract) IgnoredMethod9(ctx FakeContext, tx *FakeTx) (*FakeResponse, error) {
 	return nil, nil
 }
 
@@ -64,7 +76,7 @@ func TestServiceMapAutoDiscovery(t *testing.T) {
 		return
 	}
 
-	for i := 1; i < 8; i++ {
+	for i := 1; i < 10; i++ {
 		methodName := fmt.Sprintf("fakeContract.IgnoredMethod%d", i)
 		if _, _, err := srvMap.Get(methodName); err == nil {
 			t.Errorf("Error: %s should not be registered", methodName)

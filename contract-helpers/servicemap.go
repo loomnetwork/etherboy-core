@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	// Precompute the reflect.Type of error and http.Request
+	// Precompute the reflect.Type of some types
 	typeOfError   = reflect.TypeOf((*error)(nil)).Elem()
-	typeOfRequest = reflect.TypeOf((*plugin.Context)(nil)).Elem()
+	typeOfContext = reflect.TypeOf((*plugin.Context)(nil)).Elem()
 )
 
 // ----------------------------------------------------------------------------
@@ -86,7 +86,12 @@ func (m *serviceMap) Register(rcvr interface{}, name string) error {
 			continue
 		}
 
-		// TODO: validate plugin.Context?
+		// Second argument must be a pointer and must be something that implements the
+		// plugin.Context interface
+		contextType := mtype.In(1)
+		if !contextType.Implements(typeOfContext) {
+			continue
+		}
 
 		// Third argument must be a pointer and must be exported.
 		args := mtype.In(2)
