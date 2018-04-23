@@ -15,7 +15,7 @@ import (
 func main() {}
 
 type EtherBoy struct {
-	contract.SimpleContract
+	contract.RequestDispatcher
 }
 
 func (e *EtherBoy) Meta() plugin.Meta {
@@ -91,7 +91,7 @@ func (s *EtherBoy) ownerKey(owner string) []byte {
 
 func NewEtherBoyContract() plugin.Contract {
 	e := &EtherBoy{}
-	e.SimpleContract.Init(e)
+	e.RequestDispatcher.Init(e)
 	return e
 }
 

@@ -11,23 +11,26 @@ import (
 	"github.com/loomnetwork/loom/plugin"
 )
 
-type SimpleContract struct {
+// RequestDispatcher dispatches plugin.Request(s) to contract methods.
+// The dispatcher takes care of unmarshalling requests and marshalling responses from/to protobufs
+// or JSON - based on the content type specified in the plugin.Request.ContentType/Accept fields.
+type RequestDispatcher struct {
 	callbacks *serviceMap
 }
 
-func (s *SimpleContract) Init(contract plugin.Contract) error {
+func (s *RequestDispatcher) Init(contract plugin.Contract) error {
 	s.callbacks = new(serviceMap)
 	return s.callbacks.Register(contract, contract.Meta().Name)
 }
 
-func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Request) (*plugin.Response, error) {
+func (s *RequestDispatcher) StaticCall(ctx plugin.StaticContext, req *plugin.Request) (*plugin.Response, error) {
 	var result []reflect.Value
 	if req.ContentType == plugin.ContentType_JSON {
 		var query txmsg.SimpleContractMethodJSON
 		if err := json.Unmarshal(req.Body, &query); err != nil {
 			return nil, err
 		}
-		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method)
+		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method, true)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +48,7 @@ func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Reques
 		if err := proto.Unmarshal(req.Body, &query); err != nil {
 			return nil, err
 		}
-		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method)
+		serviceSpec, methodSpec, err := s.callbacks.Get(query.Method, true)
 		if err != nil {
 			return nil, err
 		}
@@ -83,13 +86,14 @@ func (s *SimpleContract) StaticCall(ctx plugin.StaticContext, req *plugin.Reques
 	return resp, err
 }
 
-func (s *SimpleContract) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
+func (s *RequestDispatcher) Call(ctx plugin.Context, req *plugin.Request) (*plugin.Response, error) {
+	// TODO: handle req.ContentType/Accept == JSON
 	var tx txmsg.SimpleContractMethod
 	if err := proto.Unmarshal(req.Body, &tx); err != nil {
 		return nil, err
 	}
 
-	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method)
+	serviceSpec, methodSpec, err := s.callbacks.Get(tx.Method, false)
 	if err != nil {
 		return nil, err
 	}
