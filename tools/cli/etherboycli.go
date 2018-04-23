@@ -43,24 +43,15 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Vadim: I commented this out since I didn't feel like debugging potential
 			// file encoding/formatting issues, just wanted to get the RPC & marshalling sorted out.
-			/*
-				privKey, err := ioutil.ReadFile(privFile)
-				if err != nil {
-					log.Fatalf("Cannot read priv key: %s", privFile)
-				}
-				addr, err := ioutil.ReadFile(publicFile)
-				if err != nil {
-					log.Fatalf("Cannot read address file: %s", publicFile)
-				}
-			*/
-			pubKey, privKey, err := ed25519.GenerateKey(nil)
+
+			privKey, err := ioutil.ReadFile(privFile)
 			if err != nil {
-				return err
+				log.Fatalf("Cannot read priv key: %s", privFile)
 			}
-			log.Println("pub:")
-			log.Println(hex.EncodeToString(pubKey))
-			log.Println("priv:")
-			log.Println(hex.EncodeToString(privKey))
+			addr, err := ioutil.ReadFile(publicFile)
+			if err != nil {
+				log.Fatalf("Cannot read address file: %s", publicFile)
+			}
 
 			msg := &txmsg.EtherboyCreateAccountTx{
 				Version: 0,
@@ -88,16 +79,16 @@ func main() {
 			if err != nil {
 				return err
 			}
-			addr, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
+			contractAddrS, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
 			if err != nil {
 				return err
 			}
 			contractAddr := &loom.Address{
 				ChainID: "default",
-				Local:   loom.LocalAddress(addr),
+				Local:   loom.LocalAddress(contractAddrS),
 			}
-			localAddr := loom.LocalAddressFromPublicKey(pubKey)
-			log.Println("Local addr:")
+
+			localAddr := loom.LocalAddressFromPublicKey(addr)
 			log.Println(localAddr)
 			clientAddr := &loom.Address{
 				ChainID: "default",
@@ -121,19 +112,14 @@ func main() {
 		Use:   "set",
 		Short: "set the state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			/*
-				privKey, err := ioutil.ReadFile(privFile)
-				if err != nil {
-					log.Fatalf("Cannot read priv key: %s", privFile)
-				}
-				addr, err := ioutil.ReadFile(publicFile)
-				if err != nil {
-					log.Fatalf("Cannot read address file: %s", publicFile)
-				}
-			*/
-			pubKey, privKey, err := ed25519.GenerateKey(nil)
+
+			privKey, err := ioutil.ReadFile(privFile)
 			if err != nil {
-				return err
+				log.Fatalf("Cannot read priv key: %s", privFile)
+			}
+			addr, err := ioutil.ReadFile(publicFile)
+			if err != nil {
+				log.Fatalf("Cannot read address file: %s", publicFile)
 			}
 			log.Printf("running send with %d", value)
 			msgData := struct {
@@ -169,22 +155,21 @@ func main() {
 			if err != nil {
 				return err
 			}
-			addr, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
+			contractAddrS, err := decodeHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
 			if err != nil {
 				return err
 			}
 			contractAddr := &loom.Address{
 				ChainID: "default",
-				Local:   loom.LocalAddress(addr),
+				Local:   loom.LocalAddress(contractAddrS),
 			}
-			localAddr := loom.LocalAddressFromPublicKey(pubKey)
-			log.Printf("Local addr: %v\n", localAddr)
+			localAddr := loom.LocalAddressFromPublicKey(addr)
 			clientAddr := &loom.Address{
 				ChainID: "default",
 				Local:   localAddr,
 			}
 			signer := lp.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 47000)
+			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
 			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
