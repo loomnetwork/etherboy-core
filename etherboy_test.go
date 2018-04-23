@@ -60,7 +60,7 @@ type FakeQueryResult struct {
 }
 
 type fakeStaticCallContract struct {
-	contract.SimpleContract
+	contract.RequestDispatcher
 }
 
 func (e *fakeStaticCallContract) Meta() plugin.Meta {
@@ -86,7 +86,7 @@ func (c *fakeStaticCallContract) FailingQueryMethod(ctx plugin.Context, params *
 
 func newFakeStaticCallContract() plugin.Contract {
 	c := &fakeStaticCallContract{}
-	c.SimpleContract.Init(c)
+	c.RequestDispatcher.Init(c)
 	return c
 }
 
