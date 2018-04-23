@@ -53,10 +53,15 @@ func main() {
 					log.Fatalf("Cannot read address file: %s", publicFile)
 				}
 			*/
-			_, privKey, err := ed25519.GenerateKey(nil)
+			pubKey, privKey, err := ed25519.GenerateKey(nil)
 			if err != nil {
 				return err
 			}
+			log.Println("pub:")
+			log.Println(hex.EncodeToString(pubKey))
+			log.Println("priv:")
+			log.Println(hex.EncodeToString(privKey))
+
 			msg := &txmsg.EtherboyCreateAccountTx{
 				Version: 0,
 				Owner:   "aditya",
@@ -91,9 +96,16 @@ func main() {
 				ChainID: "default",
 				Local:   loom.LocalAddress(addr),
 			}
+			localAddr := loom.LocalAddressFromPublicKey(pubKey)
+			log.Println("Local addr:")
+			log.Println(localAddr)
+			clientAddr := &loom.Address{
+				ChainID: "default",
+				Local: localAddr,
+			}
 			signer := lp.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 47000)
-			resp, err := rpcclient.CommitCallTx(&loom.Address{}, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
+			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
+			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
 			}
