@@ -7,9 +7,8 @@ import (
 
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	contract "github.com/loomnetwork/etherboy-core/contract-helpers"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	"github.com/loomnetwork/loom/plugin"
+	plugin "github.com/loomnetwork/loom-plugin/plugin"
 	"github.com/pkg/errors"
 )
 
@@ -25,10 +24,13 @@ func TestCreateAccount(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	msg := &txmsg.SimpleContractMethod{
-		Version: 0,
-		Method:  fmt.Sprintf("%s.CreateAccount", e.Meta().Name),
-		Data:    any,
+	meta, err := e.Meta()
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	msg := &plugin.ContractMethodCall{
+		Method: fmt.Sprintf("%s.CreateAccount", meta.Name),
+		Data:   any,
 	}
 
 	msgBytes, err := proto.Marshal(msg)
@@ -60,14 +62,14 @@ type FakeQueryResult struct {
 }
 
 type fakeStaticCallContract struct {
-	contract.RequestDispatcher
+	plugin.RequestDispatcher
 }
 
-func (e *fakeStaticCallContract) Meta() plugin.Meta {
+func (e *fakeStaticCallContract) Meta() (plugin.Meta, error) {
 	return plugin.Meta{
 		Name:    "fakeContract",
 		Version: "0.0.1",
-	}
+	}, nil
 }
 
 func (c *fakeStaticCallContract) Init(ctx plugin.Context, req *plugin.Request) error {
@@ -102,10 +104,13 @@ func TestStaticCallDispatch_JSON(t *testing.T) {
 		t.Errorf("Error: %v", err)
 	}
 
-	msg := &txmsg.SimpleContractMethodJSON{
-		Version: 0,
-		Method:  fmt.Sprintf("%s.QueryMethod", c.Meta().Name),
-		Data:    data,
+	meta, err := c.Meta()
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	msg := &plugin.ContractMethodCallJSON{
+		Method: fmt.Sprintf("%s.QueryMethod", meta.Name),
+		Data:   data,
 	}
 	msgBytes, err := json.Marshal(msg)
 
@@ -115,8 +120,8 @@ func TestStaticCallDispatch_JSON(t *testing.T) {
 
 	ctx := CreateFakeContext()
 	req := &plugin.Request{
-		ContentType: plugin.ContentType_JSON,
-		Accept:      plugin.ContentType_JSON,
+		ContentType: plugin.EncodingType_JSON,
+		Accept:      plugin.EncodingType_JSON,
 		Body:        msgBytes,
 	}
 
@@ -129,7 +134,7 @@ func TestStaticCallDispatch_JSON(t *testing.T) {
 	if resp == nil {
 		t.Errorf("Error: expected response != nil")
 	}
-	if resp.ContentType != plugin.ContentType_JSON {
+	if resp.ContentType != plugin.EncodingType_JSON {
 		t.Errorf("Error: wrong response content type")
 	}
 	var queryResult FakeQueryResult

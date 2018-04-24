@@ -5,24 +5,23 @@ import (
 	"strings"
 
 	proto "github.com/gogo/protobuf/proto"
-	contract "github.com/loomnetwork/etherboy-core/contract-helpers"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	"github.com/loomnetwork/loom"
-	"github.com/loomnetwork/loom/plugin"
+	loom "github.com/loomnetwork/loom-plugin"
+	"github.com/loomnetwork/loom-plugin/plugin"
 	"github.com/pkg/errors"
 )
 
 func main() {}
 
 type EtherBoy struct {
-	contract.RequestDispatcher
+	plugin.RequestDispatcher
 }
 
-func (e *EtherBoy) Meta() plugin.Meta {
+func (e *EtherBoy) Meta() (plugin.Meta, error) {
 	return plugin.Meta{
 		Name:    "etherboycore",
 		Version: "0.0.1",
-	}
+	}, nil
 }
 
 func (e *EtherBoy) Init(ctx plugin.Context, req *plugin.Request) error {

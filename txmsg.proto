@@ -1,5 +1,4 @@
 syntax = "proto3";
-import "google/protobuf/any.proto";
 
 message EtherboyCreateAccountTx {
 	int32 version = 1;
@@ -10,21 +9,6 @@ message EtherboyCreateAccountTx {
 message EtherboyStateTx {
 	int32 version = 1;
 	string owner = 2;
-	bytes data = 3;
-}
-
-// TODO: better names for these two
-message SimpleContractMethod {
-	// version to help upgrades to code
-	int32 version = 1;
-	string method = 2;
-	google.protobuf.Any data = 3;
-}
-
-message SimpleContractMethodJSON {
-	// version to help upgrades to code
-	int32 version = 1;
-	string method = 2;
 	bytes data = 3;
 }
 

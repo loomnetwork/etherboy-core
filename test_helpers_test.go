@@ -3,17 +3,15 @@ package main
 import (
 	"time"
 
-	"github.com/loomnetwork/loom"
-	"github.com/loomnetwork/loom/plugin"
-	"github.com/loomnetwork/loom/vm"
+	loom "github.com/loomnetwork/loom-plugin"
+	plugin "github.com/loomnetwork/loom-plugin/plugin"
+	"github.com/loomnetwork/loom-plugin/types"
 )
 
 type FakeContext struct {
 	caller  loom.Address
 	address loom.Address
-	loom.State
-	vm.VM
-	data map[string][]byte
+	data    map[string][]byte
 }
 
 func CreateFakeContext() plugin.Context {
@@ -21,17 +19,21 @@ func CreateFakeContext() plugin.Context {
 }
 
 func (c FakeContext) Call(addr loom.Address, input []byte) ([]byte, error) {
-	return c.VM.Call(c.address, addr, input)
+	return nil, nil
 }
 
 func (c FakeContext) StaticCall(addr loom.Address, input []byte) ([]byte, error) {
-	return c.VM.StaticCall(c.address, addr, input)
+	return nil, nil
 }
 
-func (c FakeContext) Message() plugin.Message {
-	return plugin.Message{
-		//		Sender: c.caller,
+func (c FakeContext) Message() types.Message {
+	return types.Message{
+		Sender: loom.Address{}.MarshalPB(),
 	}
+}
+
+func (c FakeContext) Block() types.BlockHeader {
+	return types.BlockHeader{}
 }
 
 func (c FakeContext) ContractAddress() loom.Address {
@@ -44,10 +46,20 @@ func (c FakeContext) Now() time.Time {
 
 func (c FakeContext) Emit(event []byte) {
 }
+
+func (c FakeContext) Get(key []byte) []byte {
+	v, _ := c.data[string(key)]
+	return v
+}
+
 func (c FakeContext) Has(key []byte) bool {
 	_, ok := c.data[string(key)]
 	return ok
 }
+
 func (c FakeContext) Set(key []byte, value []byte) {
 	c.data[string(key)] = value
+}
+
+func (c FakeContext) Delete(key []byte) {
 }

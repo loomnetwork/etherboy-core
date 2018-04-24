@@ -12,10 +12,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	"github.com/loomnetwork/loom"
-	lp "github.com/loomnetwork/loom-plugin"
+	loom "github.com/loomnetwork/loom-plugin"
+	plugin "github.com/loomnetwork/loom-plugin/plugin"
 	"github.com/loomnetwork/loom/client"
-	"github.com/loomnetwork/loom/plugin"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
 )
@@ -41,9 +40,6 @@ func main() {
 		Use:   "create-acct",
 		Short: "send a transaction",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Vadim: I commented this out since I didn't feel like debugging potential
-			// file encoding/formatting issues, just wanted to get the RPC & marshalling sorted out.
-
 			privKey, err := ioutil.ReadFile(privFile)
 			if err != nil {
 				log.Fatalf("Cannot read priv key: %s", privFile)
@@ -62,17 +58,16 @@ func main() {
 			if err != nil {
 				return err
 			}
-			contractTx := &txmsg.SimpleContractMethod{
-				Version: 0,
-				Method:  "etherboycore.CreateAccount",
-				Data:    packedMsg,
+			contractTx := &plugin.ContractMethodCall{
+				Method: "etherboycore.CreateAccount",
+				Data:   packedMsg,
 			}
 			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {
 				return err
 			}
 			req := &plugin.Request{
-				ContentType: plugin.ContentType_PROTOBUF3,
+				ContentType: plugin.EncodingType_PROTOBUF3,
 				Body:        contractTxBytes,
 			}
 			reqBytes, err := proto.Marshal(req)
@@ -83,20 +78,20 @@ func main() {
 			if err != nil {
 				return err
 			}
-			contractAddr := &loom.Address{
+			contractAddr := loom.Address{
 				ChainID: "default",
 				Local:   loom.LocalAddress(contractAddrS),
 			}
 
 			localAddr := loom.LocalAddressFromPublicKey(addr)
 			log.Println(localAddr)
-			clientAddr := &loom.Address{
+			clientAddr := loom.Address{
 				ChainID: "default",
-				Local: localAddr,
+				Local:   localAddr,
 			}
-			signer := lp.NewEd25519Signer(privKey)
+			signer := loom.NewEd25519Signer(privKey)
 			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
-			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
+			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -138,17 +133,16 @@ func main() {
 			if err != nil {
 				return err
 			}
-			contractTx := &txmsg.SimpleContractMethod{
-				Version: 0,
-				Method:  "etherboycore.SaveState",
-				Data:    packedMsg,
+			contractTx := &plugin.ContractMethodCall{
+				Method: "etherboycore.SaveState",
+				Data:   packedMsg,
 			}
 			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {
 				return err
 			}
 			req := &plugin.Request{
-				ContentType: plugin.ContentType_PROTOBUF3,
+				ContentType: plugin.EncodingType_PROTOBUF3,
 				Body:        contractTxBytes,
 			}
 			reqBytes, err := proto.Marshal(req)
@@ -159,18 +153,18 @@ func main() {
 			if err != nil {
 				return err
 			}
-			contractAddr := &loom.Address{
+			contractAddr := loom.Address{
 				ChainID: "default",
 				Local:   loom.LocalAddress(contractAddrS),
 			}
 			localAddr := loom.LocalAddressFromPublicKey(addr)
-			clientAddr := &loom.Address{
+			clientAddr := loom.Address{
 				ChainID: "default",
 				Local:   localAddr,
 			}
-			signer := lp.NewEd25519Signer(privKey)
+			signer := loom.NewEd25519Signer(privKey)
 			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
-			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, lp.VMType_PLUGIN, reqBytes)
+			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
 			}
