@@ -6,8 +6,8 @@ import (
 
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	loom "github.com/loomnetwork/loom-plugin"
-	"github.com/loomnetwork/loom-plugin/plugin"
+	loom "github.com/loomnetwork/go-loom"
+	"github.com/loomnetwork/go-loom/plugin"
 	"github.com/pkg/errors"
 )
 
