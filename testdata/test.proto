@@ -1,0 +1,13 @@
+syntax = "proto3";
+package testdata;
+
+// Messages used in tests
+
+message FakeQueryParams {
+    string key = 1;
+	int32 value = 2;
+}
+
+message FakeQueryResult {
+	string value = 1;
+}

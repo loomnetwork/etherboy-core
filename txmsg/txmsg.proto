@@ -16,3 +16,11 @@ message EtherboyAppState {
 	bytes address = 1;
 	bytes blob = 2;
 }
+
+message StateQueryParams {
+	string owner = 1;
+}
+
+message StateQueryResult {
+	bytes state = 1;
+}

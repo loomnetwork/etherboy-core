@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	loom "github.com/loomnetwork/loom-plugin"
-	plugin "github.com/loomnetwork/loom-plugin/plugin"
-	"github.com/loomnetwork/loom/client"
+	loom "github.com/loomnetwork/go-loom"
+	"github.com/loomnetwork/go-loom/plugin"
+	"github.com/loomnetwork/go-loom/types"
+	"github.com/loomnetwork/loomchain/client"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
 )
@@ -54,13 +54,13 @@ func main() {
 				Owner:   "aditya",
 				Data:    []byte("dummy"),
 			}
-			packedMsg, err := types.MarshalAny(msg)
+			msgBytes, err := proto.Marshal(msg)
 			if err != nil {
 				return err
 			}
-			contractTx := &plugin.ContractMethodCall{
+			contractTx := &types.ContractMethodCall{
 				Method: "etherboycore.CreateAccount",
-				Data:   packedMsg,
+				Args:   msgBytes,
 			}
 			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {
@@ -127,15 +127,15 @@ func main() {
 			msg := &txmsg.EtherboyStateTx{
 				Version: 0,
 				Owner:   "aditya",
-				Data:    []byte(msgJson),
+				Data:    msgJson,
 			}
-			packedMsg, err := types.MarshalAny(msg)
+			msgBytes, err := proto.Marshal(msg)
 			if err != nil {
 				return err
 			}
-			contractTx := &plugin.ContractMethodCall{
+			contractTx := &types.ContractMethodCall{
 				Method: "etherboycore.SaveState",
-				Data:   packedMsg,
+				Args:   msgBytes,
 			}
 			contractTxBytes, err := proto.Marshal(contractTx)
 			if err != nil {

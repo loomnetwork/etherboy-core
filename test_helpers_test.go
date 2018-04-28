@@ -3,9 +3,9 @@ package main
 import (
 	"time"
 
-	loom "github.com/loomnetwork/loom-plugin"
-	plugin "github.com/loomnetwork/loom-plugin/plugin"
-	"github.com/loomnetwork/loom-plugin/types"
+	loom "github.com/loomnetwork/go-loom"
+	plugin "github.com/loomnetwork/go-loom/plugin"
+	"github.com/loomnetwork/go-loom/types"
 )
 
 type FakeContext struct {
@@ -26,9 +26,9 @@ func (c FakeContext) StaticCall(addr loom.Address, input []byte) ([]byte, error)
 	return nil, nil
 }
 
-func (c FakeContext) Message() types.Message {
-	return types.Message{
-		Sender: loom.Address{}.MarshalPB(),
+func (c FakeContext) Message() plugin.Message {
+	return plugin.Message{
+		Sender: loom.Address{},
 	}
 }
 
