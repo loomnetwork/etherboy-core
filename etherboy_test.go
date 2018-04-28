@@ -1,64 +1,62 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/gogo/protobuf/jsonpb"
 	proto "github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/loomnetwork/etherboy-core/testdata"
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	plugin "github.com/loomnetwork/loom-plugin/plugin"
+	plugin "github.com/loomnetwork/go-loom/plugin"
+	"github.com/loomnetwork/go-loom/types"
 	"github.com/pkg/errors"
 )
 
 func TestCreateAccount(t *testing.T) {
 	e := NewEtherBoyContract()
+	meta, err := e.Meta()
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+
 	tx := &txmsg.EtherboyCreateAccountTx{
 		Version: 0,
 		Owner:   "aditya",
 		Data:    []byte("dummy"),
 	}
 
-	any, err := types.MarshalAny(tx)
+	txBytes, err := proto.Marshal(tx)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	meta, err := e.Meta()
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
-	msg := &plugin.ContractMethodCall{
+
+	msg := &types.ContractMethodCall{
 		Method: fmt.Sprintf("%s.CreateAccount", meta.Name),
-		Data:   any,
+		Args:   txBytes,
 	}
 
 	msgBytes, err := proto.Marshal(msg)
-
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-
-	ctx := CreateFakeContext()
-	req := &plugin.Request{}
-
 	fmt.Printf("Data: msgBytes-%v\n", msgBytes)
 
-	req.Body = msgBytes
+	ctx := CreateFakeContext()
+	req := &plugin.Request{
+		ContentType: plugin.EncodingType_PROTOBUF3,
+		Accept:      plugin.EncodingType_PROTOBUF3,
+		Body:        msgBytes,
+	}
+
 	resp, err := e.Call(ctx, req)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
 
 	fmt.Printf("resp -%v\n", resp)
-}
-
-type FakeQueryParams struct {
-	Key   string
-	Value int
-}
-type FakeQueryResult struct {
-	Value string
 }
 
 type fakeStaticCallContract struct {
@@ -76,13 +74,13 @@ func (c *fakeStaticCallContract) Init(ctx plugin.Context, req *plugin.Request) e
 	return nil
 }
 
-func (c *fakeStaticCallContract) QueryMethod(ctx plugin.Context, params *FakeQueryParams) (*FakeQueryResult, error) {
-	return &FakeQueryResult{
+func (c *fakeStaticCallContract) QueryMethod(ctx plugin.Context, params *testdata.FakeQueryParams) (*testdata.FakeQueryResult, error) {
+	return &testdata.FakeQueryResult{
 		Value: "alice",
 	}, nil
 }
 
-func (c *fakeStaticCallContract) FailingQueryMethod(ctx plugin.Context, params *FakeQueryParams) (*FakeQueryResult, error) {
+func (c *fakeStaticCallContract) FailingQueryMethod(ctx plugin.Context, params *testdata.FakeQueryParams) (*testdata.FakeQueryResult, error) {
 	return nil, errors.New("query failed")
 }
 
@@ -94,12 +92,14 @@ func newFakeStaticCallContract() plugin.Contract {
 
 func TestStaticCallDispatch_JSON(t *testing.T) {
 	c := newFakeStaticCallContract()
-	queryParams := &FakeQueryParams{
+	queryParams := &testdata.FakeQueryParams{
 		Key:   "bob",
 		Value: 10,
 	}
-	data, err := json.Marshal(queryParams)
 
+	var data bytes.Buffer
+	marsh := jsonpb.Marshaler{}
+	err := marsh.Marshal(&data, queryParams)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
@@ -108,9 +108,9 @@ func TestStaticCallDispatch_JSON(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	msg := &plugin.ContractMethodCallJSON{
+	msg := &types.ContractMethodCall{
 		Method: fmt.Sprintf("%s.QueryMethod", meta.Name),
-		Data:   data,
+		Args:   data.Bytes(),
 	}
 	msgBytes, err := json.Marshal(msg)
 
@@ -137,8 +137,9 @@ func TestStaticCallDispatch_JSON(t *testing.T) {
 	if resp.ContentType != plugin.EncodingType_JSON {
 		t.Errorf("Error: wrong response content type")
 	}
-	var queryResult FakeQueryResult
-	if err := json.Unmarshal(resp.Body, &queryResult); err != nil {
+	var queryResult testdata.FakeQueryResult
+	unmarsh := jsonpb.Unmarshaler{}
+	if err := unmarsh.Unmarshal(bytes.NewBuffer(resp.Body), &queryResult); err != nil {
 		t.Errorf("Error: %v", err)
 		return
 	}

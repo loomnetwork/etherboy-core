@@ -88,25 +88,16 @@ func (e *EtherBoy) SaveState(ctx plugin.Context, tx *txmsg.EtherboyStateTx) erro
 	return nil
 }
 
-// NOTE: These could be defined as protobufs instead.
-type StateQueryParams struct {
-	Owner string `json:"owner"`
-}
-
-type StateQueryResult struct {
-	State json.RawMessage `json:"state"`
-}
-
-func (e *EtherBoy) GetState(ctx plugin.Context, params *StateQueryParams) (*StateQueryResult, error) {
+func (e *EtherBoy) GetState(ctx plugin.Context, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
 	if ctx.Has(e.ownerKey(params.Owner)) {
 		statebytes := ctx.Get(e.ownerKey(params.Owner))
 		var curState txmsg.EtherboyAppState
 		if err := proto.Unmarshal(statebytes, &curState); err != nil {
 			return nil, err
 		}
-		return &StateQueryResult{State: curState.Blob}, nil
+		return &txmsg.StateQueryResult{State: curState.Blob}, nil
 	}
-	return &StateQueryResult{}, nil
+	return &txmsg.StateQueryResult{}, nil
 }
 
 func (s *EtherBoy) ownerKey(owner string) []byte {
