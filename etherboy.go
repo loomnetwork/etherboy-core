@@ -73,11 +73,12 @@ func (e *EtherBoy) SaveState(ctx plugin.Context, tx *txmsg.EtherboyStateTx) erro
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
 	emitMsg := &struct {
-		Owner     string
-		Method    string
-		Addr      []byte
-		StateData []byte
-	}{Owner: owner, Method: "savestate", Addr: curState.Address, StateData: statebytes}
+		Owner  string
+		Method string
+		Addr   []byte
+		Value  int64
+	}{Owner: owner, Method: "savestate", Addr: curState.Address}
+	json.Unmarshal(tx.Data, emitMsg)
 	emitMsgJSON, err := json.Marshal(emitMsg)
 	if err != nil {
 		log.Println("Error marshalling emit message")

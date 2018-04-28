@@ -19,6 +19,8 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+var nodeHost string = fmt.Sprintf("tcp://%s", "localhost")
+
 func decodeHexString(s string) ([]byte, error) {
 	if !strings.HasPrefix(s, "0x") {
 		return nil, errors.New("string has no hex prefix")
@@ -90,7 +92,7 @@ func main() {
 				Local:   localAddr,
 			}
 			signer := loom.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
+			rpcclient := client.NewDAppChainRPCClient(nodeHost, 46657, 9999)
 			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
@@ -118,8 +120,8 @@ func main() {
 			}
 			log.Printf("running send with %d", value)
 			msgData := struct {
-				Val int
-			}{Val: value}
+				Value int
+			}{Value: value}
 			msgJson, err := json.Marshal(msgData)
 			if err != nil {
 				log.Fatal("Cannot generate state json")
@@ -163,7 +165,7 @@ func main() {
 				Local:   localAddr,
 			}
 			signer := loom.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient("tcp://localhost", 46657, 9999)
+			rpcclient := client.NewDAppChainRPCClient(nodeHost, 46657, 9999)
 			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
