@@ -3,20 +3,20 @@ PROTOC = protoc --plugin=./protoc-gen-gogo -Ivendor -I$(GOPATH)/src -I/usr/local
 
 .PHONY: all clean test lint deps proto
 
-all: internal-plugin external-plugin etherboy-cli
-
-external-plugin: etherboycore
+all: internal-plugin etherboy-cli etherboy-indexer
 
 internal-plugin: etherboycore.so
 
-etherboycore: proto
-	go build -o contracts/$@ $(PKG)/etherboy.go
-
 etherboycore.so: proto
-	go build -buildmode=plugin -o contracts/$@ ./etherboy.go
+	mkdir -p run/contracts
+	go build -buildmode=plugin -o run/contracts/$@ ./etherboy.go
 
 etherboy-cli: proto
-	go build ./tools/cli
+	mkdir -p run/cmds
+	go build -buildmode=plugin -o run/cmds/etherboycli.so tools/cli/etherboycli/etherboycli.go
+
+etherboy-indexer:
+	go build ./tools/cli/indexer
 
 protoc-gen-gogo:
 	go build github.com/gogo/protobuf/protoc-gen-gogo
@@ -45,5 +45,5 @@ clean:
 		protoc-gen-gogo \
 		txmsg/txmsg.pb.go \
 		testdata/test.pb.go \
-		contracts/etherboy \
-		contracts/etherboy.so \
+		run/contracts/etherboy.so \
+		run/cmds/etherboyclu.so
