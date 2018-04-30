@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
 	"strings"
 
 	proto "github.com/gogo/protobuf/proto"
@@ -33,14 +35,25 @@ func (e *EtherBoy) CreateAccount(ctx plugin.Context, accTx *txmsg.EtherboyCreate
 	if ctx.Has(e.ownerKey(owner)) {
 		return errors.New("Owner already exists")
 	}
+	addr := []byte(ctx.Message().Sender.Local)
 	state := &txmsg.EtherboyAppState{
-		Address: []byte(ctx.Message().Sender.Local),
+		Address: addr,
 	}
 	statebytes, err := proto.Marshal(state)
 	if err != nil {
 		return errors.Wrap(err, "Error marshaling state node")
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
+	emitMsg := &struct {
+		Owner  string
+		Method string
+		Addr   []byte
+	}{owner, "createacct", addr}
+	emitMsgJSON, err := json.Marshal(emitMsg)
+	if err != nil {
+		log.Println("Error marshalling emit message")
+	}
+	ctx.Emit(emitMsgJSON)
 	return nil
 }
 
@@ -59,6 +72,20 @@ func (e *EtherBoy) SaveState(ctx plugin.Context, tx *txmsg.EtherboyStateTx) erro
 		return errors.Wrap(err, "Error marshaling state node")
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
+	emitMsg := &struct {
+		Owner  string
+		Method string
+		Addr   []byte
+		Value  int64
+	}{Owner: owner, Method: "savestate", Addr: curState.Address}
+	json.Unmarshal(tx.Data, emitMsg)
+	emitMsgJSON, err := json.Marshal(emitMsg)
+	if err != nil {
+		log.Println("Error marshalling emit message")
+	}
+	log.Printf("Emitting: %s\n", string(emitMsgJSON))
+	ctx.Emit(emitMsgJSON)
+
 	return nil
 }
 
