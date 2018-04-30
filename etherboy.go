@@ -55,7 +55,6 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 }
 
 func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) error {
-	log.Println(" ======== Inside save state ============ ")
 	owner := strings.TrimSpace(tx.Owner)
 	var curState txmsg.EtherboyAppState
 	if err := ctx.Get(e.ownerKey(owner), &curState); err != nil {
@@ -79,14 +78,12 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err != nil {
 		log.Println("Error marshalling emit message")
 	}
-	log.Printf("======= Emitting: %s\n", string(emitMsgJSON))
 	ctx.Emit(emitMsgJSON)
 
 	return nil
 }
 
 func (e *EtherBoy) GetState(ctx contract.StaticContext, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
-	log.Println(" ======== Inside get state ============ ")
 	if ctx.Has(e.ownerKey(params.Owner)) {
 		var curState txmsg.EtherboyAppState
 		if err := ctx.Get(e.ownerKey(params.Owner), &curState); err != nil {
