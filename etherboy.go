@@ -41,7 +41,6 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 	if err := ctx.Set(e.ownerKey(owner), state); err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
-	ctx.Set(e.ownerKey(owner), statebytes)
 	emitMsg := struct {
 		Owner  string
 		Method string
@@ -68,7 +67,6 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err := ctx.Set(e.ownerKey(owner), &curState); err != nil {
 		return errors.Wrap(err, "Error marshaling state node")
 	}
-	ctx.Set(e.ownerKey(owner), statebytes)
 	emitMsg := struct {
 		Owner  string
 		Method string
