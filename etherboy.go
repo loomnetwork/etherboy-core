@@ -85,7 +85,8 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	return nil
 }
 
-func (e *EtherBoy) GetState(ctx contract.Context, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
+func (e *EtherBoy) GetState(ctx contract.StaticContext, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
+	log.Println(" ======== Inside get state ============ ")
 	if ctx.Has(e.ownerKey(params.Owner)) {
 		var curState txmsg.EtherboyAppState
 		if err := ctx.Get(e.ownerKey(params.Owner), &curState); err != nil {
