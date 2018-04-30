@@ -44,12 +44,12 @@ func (e *EtherBoy) CreateAccount(ctx plugin.Context, accTx *txmsg.EtherboyCreate
 		return errors.Wrap(err, "Error marshaling state node")
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
-	emitMsg := &struct {
+	emitMsg := struct {
 		Owner  string
 		Method string
 		Addr   []byte
 	}{owner, "createacct", addr}
-	emitMsgJSON, err := json.Marshal(emitMsg)
+	emitMsgJSON, err := json.Marshal(&emitMsg)
 	if err != nil {
 		log.Println("Error marshalling emit message")
 	}
@@ -72,14 +72,14 @@ func (e *EtherBoy) SaveState(ctx plugin.Context, tx *txmsg.EtherboyStateTx) erro
 		return errors.Wrap(err, "Error marshaling state node")
 	}
 	ctx.Set(e.ownerKey(owner), statebytes)
-	emitMsg := &struct {
+	emitMsg := struct {
 		Owner  string
 		Method string
 		Addr   []byte
 		Value  int64
 	}{Owner: owner, Method: "savestate", Addr: curState.Address}
-	json.Unmarshal(tx.Data, emitMsg)
-	emitMsgJSON, err := json.Marshal(emitMsg)
+	json.Unmarshal(tx.Data, &emitMsg)
+	emitMsgJSON, err := json.Marshal(&emitMsg)
 	if err != nil {
 		log.Println("Error marshalling emit message")
 	}
