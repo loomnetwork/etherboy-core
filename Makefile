@@ -37,7 +37,8 @@ deps:
 	go get \
 		github.com/gogo/protobuf/jsonpb \
 		github.com/gogo/protobuf/proto \
-		github.com/spf13/cobra
+		github.com/spf13/cobra \
+		github.com/gomodule/redigo/redis
 
 clean:
 	go clean
