@@ -14,8 +14,6 @@ import (
 	loom "github.com/loomnetwork/go-loom"
 	"github.com/loomnetwork/go-loom/plugin"
 	"github.com/loomnetwork/go-loom/types"
-	"github.com/loomnetwork/loomchain/client"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -29,19 +27,24 @@ func decodeHexString(s string) ([]byte, error) {
 	return hex.DecodeString(s[2:])
 }
 
-func main() {
+type EtherboyCmdPlugin struct {
+	cmdPluginSystem loom.CmdPluginSystem
+}
+
+func (e *EtherboyCmdPlugin) Init(sys loom.CmdPluginSystem) error {
+	e.cmdPluginSystem = sys
+	return nil
+}
+
+func (e *EtherboyCmdPlugin) GetCmds() []*loom.Command {
 	var publicFile string
 	var privFile string
 	var value int
 	//var value int
-	rootCmd := &cobra.Command{
-		Use:   "etherboy",
-		Short: "Etherboy cli tool",
-	}
-	createAccCmd := &cobra.Command{
+	createAccCmd := &loom.Command{
 		Use:   "create-acct",
 		Short: "send a transaction",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *loom.Command, args []string) error {
 			privKey, err := ioutil.ReadFile(privFile)
 			if err != nil {
 				log.Fatalf("Cannot read priv key: %s", privFile)
@@ -92,7 +95,10 @@ func main() {
 				Local:   localAddr,
 			}
 			signer := loom.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient(nodeHost, 46657, 9999)
+			rpcclient, err := e.cmdPluginSystem.GetClient(nodeHost, 46657, 9999)
+			if err != nil {
+				return err
+			}
 			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
@@ -105,10 +111,10 @@ func main() {
 	createAccCmd.Flags().StringVarP(&publicFile, "address", "a", "", "address file")
 	createAccCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
-	setStateCmd := &cobra.Command{
+	setStateCmd := &loom.Command{
 		Use:   "set",
 		Short: "set the state",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *loom.Command, args []string) error {
 
 			privKey, err := ioutil.ReadFile(privFile)
 			if err != nil {
@@ -165,7 +171,11 @@ func main() {
 				Local:   localAddr,
 			}
 			signer := loom.NewEd25519Signer(privKey)
-			rpcclient := client.NewDAppChainRPCClient(nodeHost, 46657, 9999)
+
+			rpcclient, err := e.cmdPluginSystem.GetClient(nodeHost, 46657, 9999)
+			if err != nil {
+				return err
+			}
 			resp, err := rpcclient.CommitCallTx(clientAddr, contractAddr, signer, loom.VMType_PLUGIN, reqBytes)
 			if err != nil {
 				log.Fatal(err)
@@ -179,10 +189,10 @@ func main() {
 	setStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	setStateCmd.Flags().IntVarP(&value, "value", "v", 0, "integer state value")
 
-	keygenCmd := &cobra.Command{
+	keygenCmd := &loom.Command{
 		Use:   "genkey",
 		Short: "generate a public and private key pair",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *loom.Command, args []string) error {
 
 			pub, priv, err := ed25519.GenerateKey(nil)
 			if err != nil {
@@ -199,8 +209,7 @@ func main() {
 	}
 	keygenCmd.Flags().StringVarP(&publicFile, "address", "a", "", "address file")
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
-	rootCmd.AddCommand(keygenCmd)
-	rootCmd.AddCommand(createAccCmd)
-	rootCmd.AddCommand(setStateCmd)
-	rootCmd.Execute()
+	return []*loom.Command{keygenCmd, createAccCmd, setStateCmd}
 }
+
+var CmdPlugin EtherboyCmdPlugin
