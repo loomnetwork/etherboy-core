@@ -125,7 +125,7 @@ func main() {
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	rootCmd := &cobra.Command{
-		Use:   "etherboy",
+		Use:   "etherboycli",
 		Short: "Etherboy cli tool",
 	}
 	rootCmd.AddCommand(keygenCmd)
