@@ -35,7 +35,6 @@ func getPrivKey(privKeyFile string) ([]byte, error) {
 }
 
 func main() {
-	var publicFile string
 	var privFile string
 	var value int
 	//var value int
@@ -71,7 +70,6 @@ func main() {
 			return nil
 		},
 	}
-	createAccCmd.Flags().StringVarP(&publicFile, "address", "a", "", "address file")
 	createAccCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	setStateCmd := &cobra.Command{
@@ -106,7 +104,6 @@ func main() {
 			return nil
 		},
 	}
-	setStateCmd.Flags().StringVarP(&publicFile, "address", "a", "", "address file")
 	setStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	setStateCmd.Flags().IntVarP(&value, "value", "v", 0, "integer state value")
 
@@ -115,12 +112,9 @@ func main() {
 		Short: "generate a public and private key pair",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			pub, priv, err := ed25519.GenerateKey(nil)
+			_, priv, err := ed25519.GenerateKey(nil)
 			if err != nil {
 				log.Fatalf("Error generating key pair: %v", err)
-			}
-			if err := ioutil.WriteFile(publicFile, pub, 0664); err != nil {
-				log.Fatalf("Unable to write public key: %v", err)
 			}
 			if err := ioutil.WriteFile(privFile, priv, 0664); err != nil {
 				log.Fatalf("Unable to write private key: %v", err)
@@ -128,7 +122,6 @@ func main() {
 			return nil
 		},
 	}
-	keygenCmd.Flags().StringVarP(&publicFile, "address", "a", "", "address file")
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	rootCmd := &cobra.Command{
