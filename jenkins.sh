@@ -2,7 +2,7 @@
 
 set -ex
 
-export GOPATPH=~/gopath
+export GOPATH=~/gopath
 ln -sfn `pwd` $GOPATH/src/github.com/loomnetwork/etherboy-core
 cd $GOPATH/src/github.com/loomnetwork
 
