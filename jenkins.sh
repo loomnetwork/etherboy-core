@@ -15,11 +15,13 @@ else
 fi
 
 ## Building go-loom
+make clean
 make deps
 make 
 cd ..
 
 ## Building etherboy-core
 cd etherboy-core
+make clean
 make deps
 make 
