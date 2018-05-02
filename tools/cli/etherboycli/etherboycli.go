@@ -10,25 +10,12 @@ import (
 	loom "github.com/loomnetwork/go-loom"
 	"github.com/loomnetwork/go-loom/auth"
 	"github.com/loomnetwork/go-loom/client"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
 )
 
 var writeURI = fmt.Sprintf("http://%s:%d", "localhost", 46657)
 var readURI = fmt.Sprintf("http://%s:%d", "localhost", 9999)
-
-func getKeys(privFile, publicFile string) ([]byte, []byte, error) {
-	privKey, err := getPrivKey(privFile)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Cannot read priv key: %s", privFile)
-	}
-	addr, err := ioutil.ReadFile(publicFile)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Cannot read public key: %s", publicFile)
-	}
-	return privKey, addr, nil
-}
 
 func getPrivKey(privKeyFile string) ([]byte, error) {
 	return ioutil.ReadFile(privKeyFile)
