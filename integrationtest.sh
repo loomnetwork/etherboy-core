@@ -47,7 +47,7 @@ echo "{
 }
 " >> genesis.json
 
-
+rm loom_run_${etherboy_build}_${loom_build}.log
 ./loom-linux run > loom_run_${etherboy_build}_${loom_build}.log 2>&1 &
 
 sleep 5
@@ -56,9 +56,50 @@ sleep 5
 
 ./etherboycli create-acct -k key
 
+./etherboycli set -k key
+
+./etherboycli get -k key
+
 pkill -f loom-linux
 
 cat loom_run_${etherboy_build}_${loom_build}.log
 
 
 echo "_______________________OUT PROCESS PLUGIN__________________________________"
+
+
+mkdir external_test
+cd external_test
+wget https://storage.googleapis.com/private.delegatecall.com/loom/linux/build-${loom_build}/loom .
+chmod +x loom
+
+./loom init
+mkdir contracts
+echo "{
+    \"contracts\": [
+        {
+            \"vm\": \"plugin\",
+            \"format\": \"plugin\",
+            \"location\": \"etherboycore:0.0.1\",
+            \"init\": {
+
+            }
+        }
+    ]
+}
+" >> genesis.json
+
+
+gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycore.0.0.1 contracts/etherboycore.0.0.1
+rm loom_run_${etherboy_build}_${loom_build}.log
+./loom run > loom_run_${etherboy_build}_${loom_build}.log 2>&1 &
+
+sleep 5
+./etherboycli genkey -k key
+./etherboycli create-acct -k key
+./etherboycli set -k key
+./etherboycli get -k key
+
+pkill -f loom
+pkill -f etherboycore
+cat loom_run_${etherboy_build}_${loom_build}.log

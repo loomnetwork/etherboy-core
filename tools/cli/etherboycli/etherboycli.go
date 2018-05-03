@@ -96,6 +96,25 @@ func main() {
 	setStateCmd.Flags().IntVarP(&value, "value", "v", 0, "integer state value")
 	setStateCmd.Flags().StringVarP(&user, "user", "u", "", "user")
 
+	getStateCmd := &cobra.Command{
+		Use:   "get",
+		Short: "get state",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var result txmsg.StateQueryResult
+			params := &txmsg.StateQueryParams{
+				Owner: user,
+			}
+			if _, err := contract.StaticCall("GetState", params, &result); err != nil {
+				return err
+			}
+			fmt.Println(string(result.State))
+			return nil
+		},
+	}
+
+	getStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	getStateCmd.Flags().StringVarP(&user, "user", "u", "loom", "user")
+
 	keygenCmd := &cobra.Command{
 		Use:   "genkey",
 		Short: "generate a public and private key pair",
@@ -120,5 +139,6 @@ func main() {
 	rootCmd.AddCommand(keygenCmd)
 	rootCmd.AddCommand(createAccCmd)
 	rootCmd.AddCommand(setStateCmd)
+	rootCmd.AddCommand(getStateCmd)
 	rootCmd.Execute()
 }
