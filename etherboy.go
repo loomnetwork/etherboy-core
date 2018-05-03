@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
+	// "encoding/json"
+	// "log"
 	"strings"
 
 	"github.com/loomnetwork/etherboy-core/txmsg"
@@ -41,16 +41,17 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 	if err := ctx.Set(e.ownerKey(owner), state); err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
-	emitMsg := struct {
-		Owner  string
-		Method string
-		Addr   []byte
-	}{owner, "createacct", addr}
-	emitMsgJSON, err := json.Marshal(&emitMsg)
-	if err != nil {
-		log.Println("Error marshalling emit message")
-	}
-	ctx.Emit(emitMsgJSON)
+	// FIXME: causing panics
+	// emitMsg := struct {
+	// 	Owner  string
+	// 	Method string
+	// 	Addr   []byte
+	// }{owner, "createacct", addr}
+	// emitMsgJSON, err := json.Marshal(&emitMsg)
+	// if err != nil {
+	// 	log.Println("Error marshalling emit message")
+	// }
+	// ctx.Emit(emitMsgJSON)
 	return nil
 }
 
@@ -67,18 +68,19 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err := ctx.Set(e.ownerKey(owner), &curState); err != nil {
 		return errors.Wrap(err, "Error marshaling state node")
 	}
-	emitMsg := struct {
-		Owner  string
-		Method string
-		Addr   []byte
-		Value  int64
-	}{Owner: owner, Method: "savestate", Addr: curState.Address}
-	json.Unmarshal(tx.Data, &emitMsg)
-	emitMsgJSON, err := json.Marshal(&emitMsg)
-	if err != nil {
-		log.Println("Error marshalling emit message")
-	}
-	ctx.Emit(emitMsgJSON)
+	// FIXME: causing panics
+	// emitMsg := struct {
+	// 	Owner  string
+	// 	Method string
+	// 	Addr   []byte
+	// 	Value  int64
+	// }{Owner: owner, Method: "savestate", Addr: curState.Address}
+	// json.Unmarshal(tx.Data, &emitMsg)
+	// emitMsgJSON, err := json.Marshal(&emitMsg)
+	// if err != nil {
+	// 	log.Println("Error marshalling emit message")
+	// }
+	// ctx.Emit(emitMsgJSON)
 
 	return nil
 }

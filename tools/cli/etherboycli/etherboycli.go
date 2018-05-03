@@ -22,7 +22,7 @@ func getPrivKey(privKeyFile string) ([]byte, error) {
 }
 
 func main() {
-	var privFile string
+	var privFile, user string
 	var value int
 	//var value int
 
@@ -44,7 +44,7 @@ func main() {
 			}
 			msg := &txmsg.EtherboyCreateAccountTx{
 				Version: 0,
-				Owner:   "aditya",
+				Owner:   user,
 				Data:    []byte("dummy"),
 			}
 			signer := auth.NewEd25519Signer(privKey)
@@ -58,6 +58,7 @@ func main() {
 		},
 	}
 	createAccCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	createAccCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
 
 	setStateCmd := &cobra.Command{
 		Use:   "set",
@@ -77,7 +78,7 @@ func main() {
 			}
 			msg := &txmsg.EtherboyStateTx{
 				Version: 0,
-				Owner:   "aditya",
+				Owner:   user,
 				Data:    msgJSON,
 			}
 
@@ -93,6 +94,7 @@ func main() {
 	}
 	setStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	setStateCmd.Flags().IntVarP(&value, "value", "v", 0, "integer state value")
+	setStateCmd.Flags().StringVarP(&user, "user", "u", "", "user")
 
 	keygenCmd := &cobra.Command{
 		Use:   "genkey",
