@@ -38,6 +38,7 @@ echo "{
         {
             \"vm\": \"plugin\",
             \"format\": \"plugin\",
+            \"name\": \"etherboycore\",
             \"location\": \"etherboycore:0.0.1\",
             \"init\": {
 
