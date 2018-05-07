@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/loomnetwork/etherboy-core/txmsg"
-	loom "github.com/loomnetwork/go-loom"
 	"github.com/loomnetwork/go-loom/plugin"
 	contract "github.com/loomnetwork/go-loom/plugin/contractpb"
 	"github.com/pkg/errors"
@@ -43,6 +42,7 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 	if err := ctx.Set(e.ownerKey(owner), state); err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
+	ctx.GrantPermission(owner, []string{"owner"})
 	// FIXME: causing panics
 	// emitMsg := struct {
 	// 	Owner  string
@@ -63,7 +63,7 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err := ctx.Get(e.ownerKey(owner), &curState); err != nil {
 		return err
 	}
-	if loom.LocalAddress(curState.Address).Compare(ctx.Message().Sender.Local) != 0 {
+	if !ctx.HasPermission(curState.Address, []string{"owner"}) {
 		return errors.New("Owner unverified")
 	}
 	curState.Blob = tx.Data
