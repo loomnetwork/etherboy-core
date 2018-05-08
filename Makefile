@@ -42,7 +42,8 @@ deps:
 		github.com/gogo/protobuf/jsonpb \
 		github.com/gogo/protobuf/proto \
 		github.com/spf13/cobra \
-		github.com/gomodule/redigo/redis
+		github.com/gomodule/redigo/redis \
+		github.com/pkg/errors
 
 clean:
 	go clean
