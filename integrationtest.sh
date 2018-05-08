@@ -8,6 +8,8 @@ echo "Using Loom Build ${loom_build}"
 
 echo "Using Etherboy Build ${etherboy_build}"
 
+echo "Cleaning up tmp files"
+rm -rf /tmp/loom
 mkdir -p /tmp/loom/contracts
 
 echo "Downloading loom sdk"
@@ -91,6 +93,7 @@ echo "{
 
 
 gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycore.0.0.1 contracts/etherboycore.0.0.1
+chmod +x contracts/etherboycore.0.0.1
 rm loom_run_${etherboy_build}_${loom_build}.log
 ./loom run > loom_run_${etherboy_build}_${loom_build}.log 2>&1 &
 
