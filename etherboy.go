@@ -3,6 +3,8 @@ package main
 import (
 	// "encoding/json"
 	// "log"
+	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/loomnetwork/etherboy-core/txmsg"
@@ -36,24 +38,23 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 		return errors.New("Owner already exists")
 	}
 	addr := []byte(ctx.Message().Sender.Local)
-	state := &txmsg.EtherboyAppState{
+	state := txmsg.EtherboyAppState{
 		Address: addr,
 	}
-	if err := ctx.Set(e.ownerKey(owner), state); err != nil {
+	if err := ctx.Set(e.ownerKey(owner), &state); err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
-	ctx.GrantPermission(owner, []string{"owner"})
-	// FIXME: causing panics
-	// emitMsg := struct {
-	// 	Owner  string
-	// 	Method string
-	// 	Addr   []byte
-	// }{owner, "createacct", addr}
-	// emitMsgJSON, err := json.Marshal(&emitMsg)
-	// if err != nil {
-	// 	log.Println("Error marshalling emit message")
-	// }
-	// ctx.Emit(emitMsgJSON)
+	ctx.GrantPermission([]byte(owner), []string{"owner"})
+	emitMsg := struct {
+		Owner  string
+		Method string
+		Addr   []byte
+	}{owner, "createacct", addr}
+	emitMsgJSON, err := json.Marshal(emitMsg)
+	if err != nil {
+		log.Println("Error marshalling emit message")
+	}
+	ctx.Emit(emitMsgJSON)
 	return nil
 }
 
@@ -63,26 +64,25 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err := ctx.Get(e.ownerKey(owner), &curState); err != nil {
 		return err
 	}
-	if !ctx.HasPermission(curState.Address, []string{"owner"}) {
+	if ok, _ := ctx.HasPermission([]byte(owner), []string{"owner"}); !ok {
 		return errors.New("Owner unverified")
 	}
 	curState.Blob = tx.Data
 	if err := ctx.Set(e.ownerKey(owner), &curState); err != nil {
 		return errors.Wrap(err, "Error marshaling state node")
 	}
-	// FIXME: causing panics
-	// emitMsg := struct {
-	// 	Owner  string
-	// 	Method string
-	// 	Addr   []byte
-	// 	Value  int64
-	// }{Owner: owner, Method: "savestate", Addr: curState.Address}
-	// json.Unmarshal(tx.Data, &emitMsg)
-	// emitMsgJSON, err := json.Marshal(&emitMsg)
-	// if err != nil {
-	// 	log.Println("Error marshalling emit message")
-	// }
-	// ctx.Emit(emitMsgJSON)
+	emitMsg := struct {
+		Owner  string
+		Method string
+		Addr   []byte
+		Value  int64
+	}{Owner: owner, Method: "savestate", Addr: curState.Address}
+	json.Unmarshal(tx.Data, &emitMsg)
+	emitMsgJSON, err := json.Marshal(&emitMsg)
+	if err != nil {
+		log.Println("Error marshalling emit message")
+	}
+	ctx.Emit(emitMsgJSON)
 
 	return nil
 }
