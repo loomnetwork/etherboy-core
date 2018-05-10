@@ -14,7 +14,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var writeURI = fmt.Sprintf("http://%s:%d", "localhost", 46657)
+var writeURI = fmt.Sprintf("http://%s:%d", "localhost", 46658)
 var readURI = fmt.Sprintf("http://%s:%d", "localhost", 9999)
 
 func getPrivKey(privKeyFile string) ([]byte, error) {
@@ -45,7 +45,7 @@ func main() {
 			msg := &txmsg.EtherboyCreateAccountTx{
 				Version: 0,
 				Owner:   user,
-				Data:    []byte("dummy"),
+				Data:    []byte(user),
 			}
 			signer := auth.NewEd25519Signer(privKey)
 			resp, err := contract.Call("CreateAccount", msg, signer, nil)
