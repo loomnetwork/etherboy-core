@@ -59,6 +59,7 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 }
 
 func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) error {
+	ctx.Logger().Info("Starting set state contract")
 	owner := strings.TrimSpace(tx.Owner)
 	var curState txmsg.EtherboyAppState
 	if err := ctx.Get(e.ownerKey(owner), &curState); err != nil {
