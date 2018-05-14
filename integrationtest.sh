@@ -75,13 +75,16 @@ cd external_test
 wget https://storage.googleapis.com/private.delegatecall.com/loom/linux/build-${loom_build}/loom .
 chmod +x loom
 
-./loom init
+./loom init --force
+rm genesis.json
+
 mkdir contracts
 echo "{
     \"contracts\": [
         {
             \"vm\": \"plugin\",
             \"format\": \"plugin\",
+            \"name\": \"etherboycore\",
             \"location\": \"etherboycore:0.0.1\",
             \"init\": {
 
@@ -103,6 +106,6 @@ sleep 5
 ./etherboycli set -k key
 ./etherboycli get -k key
 
-pkill -f loom
-pkill -f etherboycore
 cat loom_run_${etherboy_build}_${loom_build}.log
+
+rm loom_run_${etherboy_build}_${loom_build}.log
