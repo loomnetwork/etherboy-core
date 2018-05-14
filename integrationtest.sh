@@ -113,8 +113,9 @@ sleep 5
 ./etherboycli set -k key
 ./etherboycli get -k key
 
-pkill -f loom
-pkill -f etherboycore
+# jenkins will clean up processes started as part of this script
+#pkill -f loom
+#pkill -f etherboycore
 cat loom_run_${etherboy_build}_${loom_build}.log
 
 rm *.log
