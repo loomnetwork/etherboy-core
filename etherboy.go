@@ -45,6 +45,7 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 		return errors.Wrap(err, "Error setting state")
 	}
 	ctx.GrantPermission([]byte(owner), []string{"owner"})
+	ctx.Logger().Info("Created account", "owner", owner, "address", addr)
 	emitMsg := struct {
 		Owner  string
 		Method string
@@ -78,9 +79,10 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 		Value  int64
 	}{Owner: owner, Method: "savestate", Addr: curState.Address}
 	json.Unmarshal(tx.Data, &emitMsg)
+	ctx.Logger().Debug("Set state", "owner", owner, "value", emitMsg.Value)
 	emitMsgJSON, err := json.Marshal(&emitMsg)
 	if err != nil {
-		log.Println("Error marshalling emit message")
+		ctx.Logger().Error("Error marshalling emit message", "error", err)
 	}
 	ctx.Emit(emitMsgJSON)
 
