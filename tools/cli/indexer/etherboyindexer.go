@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/loomnetwork/dcchain/gopath/src/github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 	loom "github.com/loomnetwork/go-loom"
 )
 
@@ -45,8 +46,17 @@ type indexEntry struct {
 }
 
 func main() {
-	//	redisLoop()
-	wsLoop()
+	var source string
+	flag.StringVar(&source, "s", "redis", "type of source (redis/ws)")
+	flag.Parse()
+	switch source {
+	case "redis":
+		redisLoop()
+	case "ws":
+		wsLoop()
+	default:
+		log.Fatalf("Unknown source type: %s", source)
+	}
 }
 
 func wsLoop() {
