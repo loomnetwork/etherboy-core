@@ -281,7 +281,7 @@ func main() {
 		},
 	}
 	loadtestCreateCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
-	loadtestCreateCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestCreateCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 100, "The upperbound of possible UID")
 	loadtestCreateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	loadtestSetCmd := &cobra.Command{
@@ -417,7 +417,7 @@ func main() {
 		},
 	}
 	loadtestSetCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
-	loadtestSetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestSetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 100, "The upperbound of possible UID")
 	loadtestSetCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	loadtestGetCmd := &cobra.Command{
@@ -464,12 +464,12 @@ func main() {
 						Value string
 					}{}
 					json.Unmarshal(result.GetState(), &msgData)
-					// fmt.Printf("---> user:%v, %v\n", uid, string(result.GetState()))
 
 					var succRate float64 = 1
 					if err != nil {
 						succRate = 0
 					}
+					// check if the valus is correct
 					if msgData.Value != uid {
 						succRate = 0
 					}
@@ -547,7 +547,7 @@ func main() {
 	}
 	loadtestGetCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
 	loadtestGetCmd.Flags().Int64VarP(&concurrency, "concurrency", "c", 1, "The number of concurrency")
-	loadtestGetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestGetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 100, "The upperbound of possible UID")
 	loadtestGetCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	rootCmd.AddCommand(keygenCmd)
