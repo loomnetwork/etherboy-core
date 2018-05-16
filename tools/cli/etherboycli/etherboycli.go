@@ -1,38 +1,50 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/loadimpact/k6/cmd"
+	"github.com/loadimpact/k6/core"
+	"github.com/loadimpact/k6/core/local"
+	"github.com/loadimpact/k6/lib"
+	"github.com/loadimpact/k6/stats"
+	"github.com/loadimpact/k6/stats/dummy"
+	"github.com/loadimpact/k6/ui"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	loom "github.com/loomnetwork/go-loom"
 	"github.com/loomnetwork/go-loom/auth"
 	"github.com/loomnetwork/go-loom/client"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
+	null "gopkg.in/guregu/null.v3"
 )
 
-var writeURI = fmt.Sprintf("http://%s:%d", "localhost", 46658)
-var readURI = fmt.Sprintf("http://%s:%d", "localhost", 9999)
-
-func getPrivKey(privKeyFile string) ([]byte, error) {
-	return ioutil.ReadFile(privKeyFile)
-}
+var writeURI, readURI, chainID string
 
 func main() {
+	var contractHexAddr, contractName string
 	var privFile, user string
 	var value int
 	//var value int
+	var iterations int64
 
-	rpcClient := client.NewDAppChainRPCClient("default", writeURI, readURI)
-
-	contractAddr, err := loom.LocalAddressFromHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
-	if err != nil {
-		log.Fatalf("Cannot generate contract address: %v", err)
+	rootCmd := &cobra.Command{
+		Use:   "etherboycli",
+		Short: "Etherboy cli tool",
 	}
-	contract := client.NewContract(rpcClient, contractAddr, "etherboycore")
+	rootCmd.PersistentFlags().StringVarP(&writeURI, "write", "w", "http://localhost:46658", "URI for sending txs")
+	rootCmd.PersistentFlags().StringVarP(&readURI, "read", "r", "http://localhost:9999", "URI for quering app state")
+	rootCmd.PersistentFlags().StringVarP(&contractHexAddr, "contract", "", "0x005B17864f3adbF53b1384F2E6f2120c6652F779", "contract address")
+	rootCmd.PersistentFlags().StringVarP(&contractName, "name", "n", "etherboycore", "smart contract name")
+	rootCmd.PersistentFlags().StringVarP(&chainID, "chain", "", "default", "chain ID")
 
 	createAccCmd := &cobra.Command{
 		Use:   "create-acct",
@@ -48,6 +60,10 @@ func main() {
 				Data:    []byte(user),
 			}
 			signer := auth.NewEd25519Signer(privKey)
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
 			resp, err := contract.Call("CreateAccount", msg, signer, nil)
 			if err != nil {
 				log.Fatal(err)
@@ -83,6 +99,10 @@ func main() {
 			}
 
 			signer := auth.NewEd25519Signer(privKey)
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
 			resp, err := contract.Call("SaveState", msg, signer, nil)
 			if err != nil {
 				log.Fatal(err)
@@ -104,6 +124,10 @@ func main() {
 			params := &txmsg.StateQueryParams{
 				Owner: user,
 			}
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
 			if _, err := contract.StaticCall("GetState", params, &result); err != nil {
 				return err
 			}
@@ -119,7 +143,6 @@ func main() {
 		Use:   "genkey",
 		Short: "generate a public and private key pair",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			_, priv, err := ed25519.GenerateKey(nil)
 			if err != nil {
 				log.Fatalf("Error generating key pair: %v", err)
@@ -132,13 +155,218 @@ func main() {
 	}
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
-	rootCmd := &cobra.Command{
-		Use:   "etherboycli",
-		Short: "Etherboy cli tool",
+	loadtestCmd := &cobra.Command{
+		Use:           "loadtest",
+		Short:         "generate loadtest result",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(ccmd *cobra.Command, args []string) error {
+			// setup RPC
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
+
+			// create metrics
+			// metrics
+			queryRTT := stats.New("Query RTT", stats.Trend)
+			failedRequest := stats.New("Failed Request", stats.Rate)
+			// threshold
+			thresholds := make(map[string]stats.Thresholds)
+			ths, err := stats.NewThresholds([]string{"rate<0.1"})
+			if err != nil {
+				log.Fatal(err)
+			}
+			thresholds[failedRequest.Name] = ths
+
+			// create runner
+			runner := &LoomRunner{
+				SetupFn: func(ctx context.Context) error {
+					return nil
+				},
+				Fn: func(ctx context.Context) (samples []stats.SampleContainer, err error) {
+					defer func(begin time.Time) {
+						samples = append(samples, stats.Sample{
+							Metric: queryRTT,
+							Time:   begin,
+							Value:  time.Now().Sub(begin).Seconds(),
+						})
+
+						var isFailed float64
+						samples = append(samples, stats.Sample{
+							Metric: failedRequest,
+							Time:   begin,
+							Value:  isFailed,
+						})
+					}(time.Now())
+
+					var result txmsg.StateQueryResult
+					params := &txmsg.StateQueryParams{
+						Owner: user,
+					}
+					_, err = contract.StaticCall("GetState", params, &result)
+					fmt.Printf("---> %v\n", string(result.GetState()))
+					return
+				},
+			}
+
+			// executor
+			var ex lib.Executor = local.New(runner)
+
+			// config
+			var conf cmd.Config
+			conf.Iterations = null.IntFrom(iterations)
+			conf.VUs = null.IntFrom(1)
+			conf.VUsMax = null.IntFrom(1)
+			conf.Thresholds = thresholds
+
+			engine, err := core.NewEngine(ex, conf.Options)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// ignore collector
+			engine.Collector = &dummy.Collector{}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			errC := make(chan error)
+			go func() { errC <- engine.Run(ctx) }()
+
+			// Trap Interrupts, SIGINTs and SIGTERMs.
+			sigC := make(chan os.Signal, 1)
+			signal.Notify(sigC, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+			defer signal.Stop(sigC)
+
+			// run the engine
+			func() {
+				for {
+					select {
+					case err := <-errC:
+						if err != nil {
+							fmt.Printf("error: %v\n", err)
+						}
+						cancel()
+						return
+					case sig := <-sigC:
+						fmt.Printf("got signal %v, exitting the loadtest...\n", sig)
+						cancel()
+						return
+					}
+				}
+			}()
+
+			fmt.Fprintf(os.Stdout, "\n")
+			ui.Summarize(os.Stdout, "", ui.SummaryData{
+				Opts:    conf.Options,
+				Root:    engine.Executor.GetRunner().GetDefaultGroup(),
+				Metrics: engine.Metrics,
+				Time:    engine.Executor.GetTime(),
+			})
+			fmt.Fprintf(os.Stdout, "\n")
+
+			if engine.IsTainted() {
+				fmt.Fprintf(os.Stdout, "some thresholds have failed")
+				os.Exit(1)
+			}
+
+			return nil
+		},
 	}
+	loadtestCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
+	loadtestCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	loadtestCmd.Flags().StringVarP(&user, "user", "u", "loom", "user")
+
 	rootCmd.AddCommand(keygenCmd)
 	rootCmd.AddCommand(createAccCmd)
 	rootCmd.AddCommand(setStateCmd)
 	rootCmd.AddCommand(getStateCmd)
-	rootCmd.Execute()
+	rootCmd.AddCommand(loadtestCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(1)
+	}
+}
+
+func getPrivKey(privKeyFile string) ([]byte, error) {
+	return ioutil.ReadFile(privKeyFile)
+}
+
+func getContract(contractHexAddr, contractName string) (*client.Contract, error) {
+	rpcClient := client.NewDAppChainRPCClient(chainID, writeURI, readURI)
+	contractAddr, err := loom.LocalAddressFromHexString(contractHexAddr)
+	if err != nil {
+		return nil, err
+	}
+	return client.NewContract(rpcClient, contractAddr, contractName), nil
+}
+
+// LoomRunner wraps a function in a runner whose VUs will simply call that function.
+type LoomRunner struct {
+	Fn         func(ctx context.Context) ([]stats.SampleContainer, error)
+	SetupFn    func(ctx context.Context) error
+	TeardownFn func(ctx context.Context) error
+
+	Group   *lib.Group
+	Options lib.Options
+}
+
+var _ lib.Runner = &LoomRunner{}
+
+func (r LoomRunner) VU() *LoomRunnerVU {
+	return &LoomRunnerVU{R: r}
+}
+
+func (r LoomRunner) MakeArchive() *lib.Archive {
+	return nil
+}
+
+func (r LoomRunner) NewVU() (lib.VU, error) {
+	return r.VU(), nil
+}
+
+func (r LoomRunner) Setup(ctx context.Context) error {
+	if fn := r.SetupFn; fn != nil {
+		return fn(ctx)
+	}
+	return nil
+}
+
+func (r LoomRunner) Teardown(ctx context.Context) error {
+	if fn := r.TeardownFn; fn != nil {
+		return fn(ctx)
+	}
+	return nil
+}
+
+func (r LoomRunner) GetDefaultGroup() *lib.Group {
+	if r.Group == nil {
+		r.Group = &lib.Group{}
+	}
+	return r.Group
+}
+
+func (r LoomRunner) GetOptions() lib.Options {
+	return r.Options
+}
+
+func (r *LoomRunner) SetOptions(opts lib.Options) {
+	r.Options = opts
+}
+
+// A VU spawned by a LoomRunner.
+type LoomRunnerVU struct {
+	R  LoomRunner
+	ID int64
+}
+
+func (vu LoomRunnerVU) RunOnce(ctx context.Context) ([]stats.SampleContainer, error) {
+	if vu.R.Fn == nil {
+		return []stats.SampleContainer{}, nil
+	}
+	return vu.R.Fn(ctx)
+}
+
+func (vu *LoomRunnerVU) Reconfigure(id int64) error {
+	vu.ID = id
+	return nil
 }
