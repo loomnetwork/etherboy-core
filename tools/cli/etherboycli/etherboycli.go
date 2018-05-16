@@ -15,7 +15,7 @@ import (
 )
 
 var writeURI = fmt.Sprintf("http://%s:%d", "localhost", 46658)
-var readURI = fmt.Sprintf("http://%s:%d", "localhost", 9999)
+var readURI = fmt.Sprintf("http://%s:%d/query", "localhost", 46658)
 
 func getPrivKey(privKeyFile string) ([]byte, error) {
 	return ioutil.ReadFile(privKeyFile)
