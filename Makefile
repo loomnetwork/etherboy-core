@@ -17,7 +17,7 @@ etherboycore.so: proto
 
 etherboy-cli: proto
 	mkdir -p run/cmds
-	go build -o run/cmds/etherboycli tools/cli/etherboycli/etherboycli.go
+	go build -o run/cmds/etherboycli $(PKG)/tools/cli/etherboycli
 
 etherboy-indexer:
 	go build ./tools/cli/indexer
