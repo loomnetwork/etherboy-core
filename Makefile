@@ -43,7 +43,11 @@ deps:
 		github.com/gogo/protobuf/proto \
 		github.com/spf13/cobra \
 		github.com/gomodule/redigo/redis \
-		github.com/pkg/errors
+		github.com/pkg/errors \
+		github.com/loadimpact/k6 \
+		gopkg.in/guregu/null.v3	
+	# HACK: fix vendored types used in k6
+	rm -rf $(GOPATH)/src/github.com/loadimpact/k6/vendor/gopkg.in/guregu/null.v3
 
 clean:
 	go clean
