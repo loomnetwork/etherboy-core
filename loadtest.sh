@@ -61,11 +61,11 @@ sleep 5
 
 ./etherboycli genkey -k key
 
-./etherboycli loadtest-create -k key -i 1000 -m 1000
+./etherboycli loadtest-create -k key -i 100 -m 100
 
-./etherboycli loadtest-set -k key -i 1000 -m 1000
+./etherboycli loadtest-set -k key -i 100 -m 100
 
-./etherboycli loadtest-get -k key -i 10000 -m 1000 -c 10
+./etherboycli loadtest-get -k key -i 10000 -m 100 -c 2
 
 pkill -f loom-linux
 
