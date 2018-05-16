@@ -7,6 +7,8 @@ echo "_______________________IN PROCESS PLUGIN__________________________________
 echo ${BUILDNUM}
 echo ${JOBNAME}
 
+LOADTMP=/tmp/loomloadtest
+
 
 
 echo "Using Loom Build ${loom_build}"
@@ -14,24 +16,24 @@ echo "Using Loom Build ${loom_build}"
 echo "Using Etherboy Build ${etherboy_build}"
 
 echo "Cleaning up tmp files"
-rm -rf /tmp/loomloadtest
-mkdir -p /tmp/loomloadtest/contracts
+rm -rf ${LOADTMP}
+mkdir -p ${LOADTMP}/contracts
 
 echo "Downloading loom sdk"
 
-gsutil cp gs://private.delegatecall.com/loom/linux/build-${loom_build}/loom /tmp/loom/loom-linux
+gsutil cp gs://private.delegatecall.com/loom/linux/build-${loom_build}/loom ${LOADTMP}/loom-linux
 
 echo "Downloading etherboy plugin"
 
 echo "Downloading etherboy plugin"
 
-gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycore.so /tmp/loom/contracts/etherboycore.so
+gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycore.so ${LOADTMP}/contracts/etherboycore.so
 
 echo "Downloading etherboy cli"
 
-gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycli /tmp/loom/etherboycli
+gsutil cp gs://private.delegatecall.com/etherboy/linux/build-${etherboy_build}/etherboycli ${LOADTMP}/etherboycli
 
-cd /tmp/loomloadtest
+cd ${LOADTMP}
 
 chmod +x loom-linux
 chmod +x etherboycli
