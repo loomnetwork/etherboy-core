@@ -3,7 +3,7 @@ PROTOC = protoc --plugin=./protoc-gen-gogo -Ivendor -I$(GOPATH)/src -I/usr/local
 
 .PHONY: all clean test lint deps proto
 
-all: internal-plugin etherboy-cli etherboy-indexer external-plugin
+all: etherboy-cli etherboy-indexer external-plugin
 
 internal-plugin: etherboycore.so
 external-plugin: etherboycore.0.0.1
