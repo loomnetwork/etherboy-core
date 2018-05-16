@@ -47,8 +47,8 @@ func main() {
 		Use:   "etherboycli",
 		Short: "Etherboy cli tool",
 	}
-	rootCmd.PersistentFlags().StringVarP(&writeURI, "write", "w", "http://localhost:46658", "URI for sending txs")
-	rootCmd.PersistentFlags().StringVarP(&readURI, "read", "r", "http://localhost:9999", "URI for quering app state")
+	rootCmd.PersistentFlags().StringVarP(&writeURI, "write", "w", "http://127.0.0.1:46658", "URI for sending txs")
+	rootCmd.PersistentFlags().StringVarP(&readURI, "read", "r", "http://127.0.0.1:9999", "URI for quering app state")
 	rootCmd.PersistentFlags().StringVarP(&contractHexAddr, "contract", "", "0x005B17864f3adbF53b1384F2E6f2120c6652F779", "contract address")
 	rootCmd.PersistentFlags().StringVarP(&contractName, "name", "n", "etherboycore", "smart contract name")
 	rootCmd.PersistentFlags().StringVarP(&chainID, "chain", "", "default", "chain ID")
