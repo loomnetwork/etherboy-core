@@ -41,7 +41,7 @@ func main() {
 	var privFile, user string
 	var value int
 	//var value int
-	var iterations int64
+	var iterations, maxuid, concurrency int64
 
 	rootCmd := &cobra.Command{
 		Use:   "etherboycli",
@@ -162,9 +162,9 @@ func main() {
 	}
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
-	loadtestCmd := &cobra.Command{
-		Use:           "loadtest",
-		Short:         "generate loadtest result",
+	loadtestCreateCmd := &cobra.Command{
+		Use:           "loadtest-create",
+		Short:         "loadtesting with create requests",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(ccmd *cobra.Command, args []string) error {
@@ -173,46 +173,190 @@ func main() {
 			if err != nil {
 				return err
 			}
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				return err
+			}
 
-			// create metrics
 			// metrics
-			queryRTT := stats.New("Query RTT", stats.Trend)
-			failedRequest := stats.New("Failed Request", stats.Rate)
+			createAcctRTT := stats.New("Create Account RTT", stats.Trend)
+			createAcctSuccessRate := stats.New("Create Account Success Rate", stats.Rate)
 			// threshold
 			thresholds := make(map[string]stats.Thresholds)
-			ths, err := stats.NewThresholds([]string{"rate<0.1"})
+			ths, err := stats.NewThresholds([]string{"rate==1"})
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			thresholds[failedRequest.Name] = ths
+			thresholds[createAcctSuccessRate.Name] = ths
 
 			// create runner
 			runner := &LoomRunner{
-				SetupFn: func(ctx context.Context) error {
-					return nil
-				},
-				Fn: func(ctx context.Context) (samples []stats.SampleContainer, err error) {
+				MaxUID: maxuid,
+				Fn: func(ctx context.Context, uid string) (samples []stats.SampleContainer, err error) {
 					defer func(begin time.Time) {
 						samples = append(samples, stats.Sample{
-							Metric: queryRTT,
+							Metric: createAcctRTT,
 							Time:   begin,
 							Value:  time.Now().Sub(begin).Seconds(),
 						})
 
-						var isFailed float64
+						var succRate float64 = 1
+						if err != nil {
+							succRate = 0
+						}
 						samples = append(samples, stats.Sample{
-							Metric: failedRequest,
+							Metric: createAcctSuccessRate,
 							Time:   begin,
-							Value:  isFailed,
+							Value:  succRate,
 						})
 					}(time.Now())
 
-					var result txmsg.StateQueryResult
-					params := &txmsg.StateQueryParams{
-						Owner: user,
+					msg := &txmsg.EtherboyCreateAccountTx{
+						Version: 0,
+						Owner:   uid,
+						Data:    []byte(uid),
 					}
-					_, err = contract.StaticCall("GetState", params, &result)
-					fmt.Printf("---> %v\n", string(result.GetState()))
+					signer := auth.NewEd25519Signer(privKey)
+					_, err = contract.Call("CreateAccount", msg, signer, nil)
+					if err != nil {
+						return
+					}
+					return
+				},
+			}
+
+			// executor
+			var ex lib.Executor = local.New(runner)
+
+			// config
+			var conf cmd.Config
+			conf.Iterations = null.IntFrom(iterations)
+			conf.VUs = null.IntFrom(1) // VU must be 1 for create-acct
+			conf.VUsMax = null.IntFrom(1)
+			conf.Thresholds = thresholds
+
+			engine, err := core.NewEngine(ex, conf.Options)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// ignore collector
+			engine.Collector = &dummy.Collector{}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			errC := make(chan error)
+			go func() { errC <- engine.Run(ctx) }()
+
+			// Trap Interrupts, SIGINTs and SIGTERMs.
+			sigC := make(chan os.Signal, 1)
+			signal.Notify(sigC, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+			defer signal.Stop(sigC)
+
+			// run the engine
+			func() {
+				for {
+					select {
+					case err := <-errC:
+						if err != nil {
+							fmt.Printf("error: %v\n", err)
+						}
+						cancel()
+						return
+					case sig := <-sigC:
+						fmt.Printf("got signal %v, exitting the loadtest...\n", sig)
+						cancel()
+						return
+					}
+				}
+			}()
+
+			fmt.Fprintf(os.Stdout, "\n")
+			ui.Summarize(os.Stdout, "", ui.SummaryData{
+				Opts:    conf.Options,
+				Root:    engine.Executor.GetRunner().GetDefaultGroup(),
+				Metrics: engine.Metrics,
+				Time:    engine.Executor.GetTime(),
+			})
+			fmt.Fprintf(os.Stdout, "\n")
+
+			if engine.IsTainted() {
+				fmt.Fprintf(os.Stdout, "some thresholds have failed")
+				os.Exit(1)
+			}
+
+			return nil
+		},
+	}
+	loadtestCreateCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
+	loadtestCreateCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestCreateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+
+	loadtestSetCmd := &cobra.Command{
+		Use:           "loadtest-set",
+		Short:         "loadteting with set requests",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(ccmd *cobra.Command, args []string) error {
+			// setup RPC
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// metrics
+			setRTT := stats.New("Set RTT", stats.Trend)
+			setSuccessRate := stats.New("Create Account Success Rate", stats.Rate)
+			// threshold
+			thresholds := make(map[string]stats.Thresholds)
+			ths, err := stats.NewThresholds([]string{"rate==1"})
+			if err != nil {
+				return err
+			}
+			thresholds[setSuccessRate.Name] = ths
+
+			// create runner
+			runner := &LoomRunner{
+				MaxUID: maxuid,
+				Fn: func(ctx context.Context, uid string) (samples []stats.SampleContainer, err error) {
+					defer func(begin time.Time) {
+						samples = append(samples, stats.Sample{
+							Metric: setRTT,
+							Time:   begin,
+							Value:  time.Now().Sub(begin).Seconds(),
+						})
+
+						var succRate float64 = 1
+						if err != nil {
+							succRate = 0
+						}
+						samples = append(samples, stats.Sample{
+							Metric: setSuccessRate,
+							Time:   begin,
+							Value:  succRate,
+						})
+					}(time.Now())
+
+					msgData := struct {
+						Value string
+					}{Value: uid}
+					msgJSON, err := json.Marshal(msgData)
+					if err != nil {
+						return nil, err
+					}
+					msg := &txmsg.EtherboyStateTx{
+						Version: 0,
+						Owner:   uid,
+						Data:    msgJSON,
+					}
+					signer := auth.NewEd25519Signer(privKey)
+					_, err = contract.Call("SaveState", msg, signer, nil)
+					if err != nil {
+						return nil, err
+					}
 					return
 				},
 			}
@@ -279,15 +423,147 @@ func main() {
 			return nil
 		},
 	}
-	loadtestCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
-	loadtestCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
-	loadtestCmd.Flags().StringVarP(&user, "user", "u", "loom", "user")
+	loadtestSetCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
+	loadtestSetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestSetCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+
+	loadtestGetCmd := &cobra.Command{
+		Use:           "loadtest-get",
+		Short:         "loadteting with get requests",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(ccmd *cobra.Command, args []string) error {
+			// setup RPC
+			contract, err := getContract(contractHexAddr, contractName)
+			if err != nil {
+				return err
+			}
+
+			// metrics
+			getRTT := stats.New("Get RTT", stats.Trend)
+			getSuccessRate := stats.New("Get Success Rate", stats.Rate)
+			// threshold
+			thresholds := make(map[string]stats.Thresholds)
+			ths, err := stats.NewThresholds([]string{"rate>0.99"})
+			if err != nil {
+				return err
+			}
+			thresholds[getSuccessRate.Name] = ths
+
+			// create runner
+			runner := &LoomRunner{
+				MaxUID: maxuid,
+				Fn: func(ctx context.Context, uid string) (samples []stats.SampleContainer, err error) {
+					begin := time.Now()
+
+					var result txmsg.StateQueryResult
+					params := &txmsg.StateQueryParams{
+						Owner: uid,
+					}
+					_, err = contract.StaticCall("GetState", params, &result)
+					samples = append(samples, stats.Sample{
+						Metric: getRTT,
+						Time:   begin,
+						Value:  time.Now().Sub(begin).Seconds(),
+					})
+
+					msgData := struct {
+						Value string
+					}{}
+					json.Unmarshal(result.GetState(), &msgData)
+					// fmt.Printf("---> user:%v, %v\n", uid, string(result.GetState()))
+
+					var succRate float64 = 1
+					if err != nil {
+						succRate = 0
+					}
+					if msgData.Value != uid {
+						succRate = 0
+					}
+					samples = append(samples, stats.Sample{
+						Metric: getSuccessRate,
+						Time:   begin,
+						Value:  succRate,
+					})
+
+					return
+				},
+			}
+
+			// executor
+			var ex lib.Executor = local.New(runner)
+
+			// config
+			var conf cmd.Config
+			conf.Iterations = null.IntFrom(iterations)
+			conf.VUs = null.IntFrom(concurrency)
+			conf.VUsMax = null.IntFrom(concurrency)
+			conf.Thresholds = thresholds
+
+			engine, err := core.NewEngine(ex, conf.Options)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// ignore collector
+			engine.Collector = &dummy.Collector{}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			errC := make(chan error)
+			go func() { errC <- engine.Run(ctx) }()
+
+			// Trap Interrupts, SIGINTs and SIGTERMs.
+			sigC := make(chan os.Signal, 1)
+			signal.Notify(sigC, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+			defer signal.Stop(sigC)
+
+			// run the engine
+			func() {
+				for {
+					select {
+					case err := <-errC:
+						if err != nil {
+							fmt.Printf("error: %v\n", err)
+						}
+						cancel()
+						return
+					case sig := <-sigC:
+						fmt.Printf("got signal %v, exitting the loadtest...\n", sig)
+						cancel()
+						return
+					}
+				}
+			}()
+
+			fmt.Fprintf(os.Stdout, "\n")
+			ui.Summarize(os.Stdout, "", ui.SummaryData{
+				Opts:    conf.Options,
+				Root:    engine.Executor.GetRunner().GetDefaultGroup(),
+				Metrics: engine.Metrics,
+				Time:    engine.Executor.GetTime(),
+			})
+			fmt.Fprintf(os.Stdout, "\n")
+
+			if engine.IsTainted() {
+				fmt.Fprintf(os.Stdout, "some thresholds have failed")
+				os.Exit(1)
+			}
+
+			return nil
+		},
+	}
+	loadtestGetCmd.Flags().Int64VarP(&iterations, "iteration", "i", 1, "The number of iteration")
+	loadtestGetCmd.Flags().Int64VarP(&concurrency, "concurrency", "c", 1, "The number of concurrency")
+	loadtestGetCmd.Flags().Int64VarP(&maxuid, "maxuid", "m", 1000, "The upperbound of possible UID")
+	loadtestGetCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	rootCmd.AddCommand(keygenCmd)
 	rootCmd.AddCommand(createAccCmd)
 	rootCmd.AddCommand(setStateCmd)
 	rootCmd.AddCommand(getStateCmd)
-	rootCmd.AddCommand(loadtestCmd)
+	rootCmd.AddCommand(loadtestCreateCmd)
+	rootCmd.AddCommand(loadtestSetCmd)
+	rootCmd.AddCommand(loadtestGetCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)
@@ -301,75 +577,4 @@ func getContract(contractHexAddr, contractName string) (*client.Contract, error)
 		return nil, err
 	}
 	return client.NewContract(rpcClient, contractAddr, contractName), nil
-}
-
-// LoomRunner wraps a function in a runner whose VUs will simply call that function.
-type LoomRunner struct {
-	Fn         func(ctx context.Context) ([]stats.SampleContainer, error)
-	SetupFn    func(ctx context.Context) error
-	TeardownFn func(ctx context.Context) error
-
-	Group   *lib.Group
-	Options lib.Options
-}
-
-var _ lib.Runner = &LoomRunner{}
-
-func (r LoomRunner) VU() *LoomRunnerVU {
-	return &LoomRunnerVU{R: r}
-}
-
-func (r LoomRunner) MakeArchive() *lib.Archive {
-	return nil
-}
-
-func (r LoomRunner) NewVU() (lib.VU, error) {
-	return r.VU(), nil
-}
-
-func (r LoomRunner) Setup(ctx context.Context) error {
-	if fn := r.SetupFn; fn != nil {
-		return fn(ctx)
-	}
-	return nil
-}
-
-func (r LoomRunner) Teardown(ctx context.Context) error {
-	if fn := r.TeardownFn; fn != nil {
-		return fn(ctx)
-	}
-	return nil
-}
-
-func (r LoomRunner) GetDefaultGroup() *lib.Group {
-	if r.Group == nil {
-		r.Group = &lib.Group{}
-	}
-	return r.Group
-}
-
-func (r LoomRunner) GetOptions() lib.Options {
-	return r.Options
-}
-
-func (r *LoomRunner) SetOptions(opts lib.Options) {
-	r.Options = opts
-}
-
-// A VU spawned by a LoomRunner.
-type LoomRunnerVU struct {
-	R  LoomRunner
-	ID int64
-}
-
-func (vu LoomRunnerVU) RunOnce(ctx context.Context) ([]stats.SampleContainer, error) {
-	if vu.R.Fn == nil {
-		return []stats.SampleContainer{}, nil
-	}
-	return vu.R.Fn(ctx)
-}
-
-func (vu *LoomRunnerVU) Reconfigure(id int64) error {
-	vu.ID = id
-	return nil
 }
