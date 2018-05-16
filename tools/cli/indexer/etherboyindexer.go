@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/loomnetwork/dcchain/gopath/src/github.com/gorilla/websocket"
 	loom "github.com/loomnetwork/go-loom"
 )
 
@@ -17,10 +19,12 @@ var elasticURL = "http://localhost:9200"
 var elasticIndex = "etherboy"
 
 type emitData struct {
-	Caller     loom.Address `json:"caller"`
-	Address    loom.Address `json:"address"`
-	PluginName string       `json:"plugin"`
-	Data       []byte       `json:"encodedData"`
+	Caller      loom.Address `json:"caller"`
+	Address     loom.Address `json:"address"`
+	PluginName  string       `json:"plugin"`
+	BlockHeight int64        `json:"blockHeight"`
+	Data        []byte       `json:"encodedData"`
+	RawRequest  []byte       `json:"rawRequest"`
 }
 
 type emitMsg struct {
@@ -41,6 +45,50 @@ type indexEntry struct {
 }
 
 func main() {
+	//	redisLoop()
+	wsLoop()
+}
+
+func wsLoop() {
+	subscribeCommand := struct {
+		Method  string   `json:"method"`
+		JSONRPC string   `json:"jsonrpc"`
+		Params  []string `json:"params"`
+		ID      string   `json:"id"`
+	}{"subevents", "2.0", []string{}, "dummy"}
+	subscribeMsg, err := json.Marshal(subscribeCommand)
+	if err != nil {
+		log.Fatal("Cannot marshal command to json")
+	}
+	u := url.URL{Scheme: "ws", Host: "localhost:9999", Path: "/queryws"}
+	log.Printf("connecting to %s", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
+	if err := c.WriteMessage(websocket.TextMessage, subscribeMsg); err != nil {
+		log.Fatal("Error writing command:", err)
+	}
+
+	for {
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			return
+		}
+		var ed emitData
+		if err := json.Unmarshal(message, &ed); err != nil {
+			log.Printf("Error unmarshaling event data %s: %v", message, err)
+			continue
+		}
+		indexEvent(ed.BlockHeight, &ed)
+		log.Printf("recv: %s", message)
+	}
+}
+
+func redisLoop() {
 	c, err := redis.DialURL("redis://localhost:6379")
 	if err != nil {
 		log.Fatal("Cannot connect to redis")
