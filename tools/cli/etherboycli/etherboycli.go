@@ -16,7 +16,6 @@ import (
 	"github.com/loadimpact/k6/core/local"
 	"github.com/loadimpact/k6/lib"
 	"github.com/loadimpact/k6/stats"
-	"github.com/loadimpact/k6/stats/dummy"
 	"github.com/loadimpact/k6/ui"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	loom "github.com/loomnetwork/go-loom"
@@ -29,18 +28,13 @@ import (
 
 var writeURI = fmt.Sprintf("http://%s:%d/rpc", "localhost", 46658)
 var readURI = fmt.Sprintf("http://%s:%d/query", "localhost", 46658)
-
-func getPrivKey(privKeyFile string) ([]byte, error) {
-	return ioutil.ReadFile(privKeyFile)
-}
-
 var chainID string
 
 func main() {
 	var contractHexAddr, contractName string
 	var privFile, user string
 	var value int
-	//var value int
+	// loadtests params
 	var iterations, maxuid, concurrency int64
 
 	rootCmd := &cobra.Command{
@@ -119,7 +113,7 @@ func main() {
 			return nil
 		},
 	}
-	setStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	setStateCmd.Flags().StringVarP(&privFile, "key", "k", "key", "private key file")
 	setStateCmd.Flags().IntVarP(&value, "value", "v", 0, "integer state value")
 	setStateCmd.Flags().StringVarP(&user, "user", "u", "", "user")
 
@@ -239,9 +233,6 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			// ignore collector
-			engine.Collector = &dummy.Collector{}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			errC := make(chan error)
@@ -376,9 +367,6 @@ func main() {
 				log.Fatal(err)
 			}
 
-			// ignore collector
-			engine.Collector = &dummy.Collector{}
-
 			ctx, cancel := context.WithCancel(context.Background())
 			errC := make(chan error)
 			go func() { errC <- engine.Run(ctx) }()
@@ -505,9 +493,6 @@ func main() {
 				log.Fatal(err)
 			}
 
-			// ignore collector
-			engine.Collector = &dummy.Collector{}
-
 			ctx, cancel := context.WithCancel(context.Background())
 			errC := make(chan error)
 			go func() { errC <- engine.Run(ctx) }()
@@ -577,4 +562,8 @@ func getContract(contractHexAddr, contractName string) (*client.Contract, error)
 		return nil, err
 	}
 	return client.NewContract(rpcClient, contractAddr, contractName), nil
+}
+
+func getPrivKey(privKeyFile string) ([]byte, error) {
+	return ioutil.ReadFile(privKeyFile)
 }
