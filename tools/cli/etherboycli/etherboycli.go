@@ -28,11 +28,11 @@ func main() {
 
 	rpcClient := client.NewDAppChainRPCClient("default", writeURI, readURI)
 
-	contractAddr, err := loom.LocalAddressFromHexString("0x005B17864f3adbF53b1384F2E6f2120c6652F779")
+	contractAddr, err := loom.LocalAddressFromHexString("0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d")
 	if err != nil {
 		log.Fatalf("Cannot generate contract address: %v", err)
 	}
-	contract := client.NewContract(rpcClient, contractAddr, "etherboycore")
+	contract := client.NewContract(rpcClient, contractAddr)
 
 	createAccCmd := &cobra.Command{
 		Use:   "create-acct",
