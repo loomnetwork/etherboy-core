@@ -1,7 +1,5 @@
 ## Building
 
-Ensure `github.com/loomnetwork/loom` is in your `GOPATH`, then:
-
 ```shell
 cd $GOPATH/src/github.com/loomnetwork
 # clone into gopath

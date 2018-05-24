@@ -44,7 +44,10 @@ deps:
 		github.com/spf13/cobra \
 		github.com/gomodule/redigo/redis \
 		github.com/gorilla/websocket \
-		github.com/pkg/errors
+		github.com/pkg/errors \
+		github.com/grpc-ecosystem/go-grpc-prometheus \
+        github.com/hashicorp/go-plugin \
+		github.com/loomnetwork/go-loom
 
 clean:
 	go clean
