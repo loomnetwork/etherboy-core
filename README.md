@@ -1,3 +1,16 @@
+## Etherboy Smart contracts
+
+This repo contains the smart contracts for the Etherboy Game.
+
+For the Unity frontend see this [game repo](https://github.com/loomnetwork/Etherboy)
+
+![Animation](https://loomx.io/developers/img/etherboy-clip.gif)
+
+
+## Docs
+
+![Docs Site](https://loomx.io/developers/docs/en/etherboy-game.html)
+
 ## Building
 
 ```shell
