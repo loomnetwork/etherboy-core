@@ -9,7 +9,7 @@ For the Unity frontend see this [game repo](https://github.com/loomnetwork/Ether
 
 ## Docs
 
-![Docs Site](https://loomx.io/developers/docs/en/etherboy-game.html)
+[Docs Site](https://loomx.io/developers/docs/en/etherboy-game.html)
 
 ## Building
 
