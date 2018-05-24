@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,13 +10,18 @@ import (
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	loom "github.com/loomnetwork/go-loom"
 	"github.com/loomnetwork/go-loom/auth"
+	ctypes "github.com/loomnetwork/go-loom/builtin/types/coin"
 	"github.com/loomnetwork/go-loom/client"
+	types "github.com/loomnetwork/go-loom/types"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ed25519"
 )
 
 var writeURI = fmt.Sprintf("http://%s:%d/rpc", "localhost", 46658)
 var readURI = fmt.Sprintf("http://%s:%d/query", "localhost", 46658)
+
+// var writeURI = fmt.Sprintf("http://%s:%d/rpc", "etherboy-stage.loomapps.io", 80)
+// var readURI = fmt.Sprintf("http://%s:%d/query", "etherboy-stage.loomapps.io", 80)
 
 func getPrivKey(privKeyFile string) ([]byte, error) {
 	return ioutil.ReadFile(privKeyFile)
@@ -59,6 +65,131 @@ func main() {
 	}
 	createAccCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	createAccCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
+
+	txCmd := &cobra.Command{
+		Use:   "tx",
+		Short: "send a transaction",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			msg := &txmsg.EtherboyEndGameTx{
+				Version: 0,
+				Owner:   user,
+				Data:    []byte(user),
+			}
+			signer := auth.NewEd25519Signer(privKey)
+			encoder := base64.StdEncoding
+			addr := loom.LocalAddressFromPublicKey(signer.PublicKey()[:])
+			fmt.Println(addr)
+			fmt.Println(encoder.EncodeToString(addr))
+			resp, err := contract.Call("EndGame", msg, signer, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(resp)
+
+			return nil
+		},
+	}
+	txCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	txCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
+
+	balCmd := &cobra.Command{
+		Use:   "bal",
+		Short: "Balance",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			encoder := base64.StdEncoding
+			addr := loom.LocalAddressFromPublicKey([]byte("0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d"))
+			fmt.Println("==")
+			fmt.Println(addr)
+			fmt.Println(encoder.EncodeToString([]byte("0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d")))
+			fmt.Println("==")
+			rpcClient := client.NewDAppChainRPCClient("default", writeURI, readURI)
+			contractAddr, err := loom.LocalAddressFromHexString("0x01D10029c253fA02D76188b84b5846ab3D19510D")
+			if err != nil {
+				log.Fatalf("Cannot generate contract address: %v", err)
+			}
+			contract := client.NewContract(rpcClient, contractAddr)
+			addr1 := loom.MustParseAddress("default:" + user)
+			// "0xe9CF9552A580c7A79667f7F81D541Ecd6af2EBf9"
+
+			msg := &ctypes.BalanceOfRequest{
+				Owner: addr1.MarshalPB(),
+			}
+			var result ctypes.BalanceOfResponse
+			if _, err := contract.StaticCall("BalanceOf", msg, &result); err != nil {
+				return err
+			}
+			fmt.Println(result.Balance.Value)
+			return nil
+		},
+	}
+	balCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
+
+	trnTokenCmd := &cobra.Command{
+		Use:   "transfer_token",
+		Short: "send a transaction",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			toAddr := &types.Address{}
+			msg := &txmsg.EtherboyTransferTokenTx{
+				Version: 0,
+				Owner:   user,
+				ToAddr:  toAddr,
+			}
+			signer := auth.NewEd25519Signer(privKey)
+			encoder := base64.StdEncoding
+			addr := loom.LocalAddressFromPublicKey(signer.PublicKey()[:])
+			fmt.Println(addr)
+			fmt.Println(encoder.EncodeToString(addr))
+			resp, err := contract.Call("TransferToken", msg, signer, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(resp)
+
+			return nil
+		},
+	}
+	trnTokenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	trnTokenCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
+
+	transferCmd := &cobra.Command{
+		Use:   "transfer",
+		Short: "Transfer to Contract",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rpcClient := client.NewDAppChainRPCClient("default", writeURI, readURI)
+			contractAddr, err := loom.LocalAddressFromHexString("0x01D10029c253fA02D76188b84b5846ab3D19510D")
+			if err != nil {
+				log.Fatalf("Cannot generate contract address: %v", err)
+			}
+			contract := client.NewContract(rpcClient, contractAddr)
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			//Address of etherboy contract
+			addr1 := loom.MustParseAddress("default:0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d")
+			amount := loom.NewBigUIntFromInt(10)
+			msg := &ctypes.TransferRequest{
+				To:     addr1.MarshalPB(),
+				Amount: &types.BigUInt{Value: *amount},
+			}
+			signer := auth.NewEd25519Signer(privKey)
+			resp, err := contract.Call("Transfer", msg, signer, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(resp)
+			return nil
+		},
+	}
+	transferCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
 	setStateCmd := &cobra.Command{
 		Use:   "set",
@@ -152,5 +283,9 @@ func main() {
 	rootCmd.AddCommand(createAccCmd)
 	rootCmd.AddCommand(setStateCmd)
 	rootCmd.AddCommand(getStateCmd)
+	rootCmd.AddCommand(txCmd)
+	rootCmd.AddCommand(balCmd)
+	rootCmd.AddCommand(transferCmd)
+	rootCmd.AddCommand(trnTokenCmd)
 	rootCmd.Execute()
 }

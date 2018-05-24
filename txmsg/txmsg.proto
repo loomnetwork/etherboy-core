@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "github.com/loomnetwork/go-loom/types/types.proto";
+
 message EtherboyCreateAccountTx {
 	int32 version = 1;
 	string owner = 2;
@@ -23,4 +25,16 @@ message StateQueryParams {
 
 message StateQueryResult {
 	bytes state = 1;
+}
+
+message EtherboyEndGameTx {
+    int32 version = 1;
+    string owner = 2;
+    bytes data = 3;
+}
+
+message EtherboyTransferTokenTx {
+    int32 version = 1;
+    string owner = 2;
+    Address toAddr = 3;
 }
