@@ -136,39 +136,13 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 		return errors.New("Tokens already transferred")
 	}
 
-	// Transfer Tokens if not already
-	localAddr := ctx.Message().Sender.Local.String()
-	toAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + localAddr)
-	coinAddr, err := ctx.Resolve("coin")
-	if err != nil {
-		ctx.Logger().Info("Cannot load coin contract", err)
-		return err
-	}
-	approveMsg := &ctypes.ApproveRequest{
-		Spender: toAddr.MarshalPB(),
-		Amount: &types.BigUInt{
-			Value: *loom.NewBigUIntFromInt(1),
-		},
-	}
-	appResp := &ctypes.ApproveResponse{}
-	err1 := contract.CallMethod(ctx, coinAddr, "Approve", approveMsg, appResp)
-	ctx.Logger().Info("Approve Response", err1)
-	amount := loom.NewBigUIntFromInt(1)
-	msg := &ctypes.TransferFromRequest{
-		From:   toAddr.MarshalPB(),
-		To:     loom.MustParseAddress("default:0x06D313A35B77B0Ef70d3741022f79E3f5A56A971").MarshalPB(),
-		Amount: &types.BigUInt{Value: *amount},
-	}
-	resp := &ctypes.TransferFromResponse{}
-	err2 := contract.CallMethod(ctx, coinAddr, "TransferFrom", msg, resp)
-
-	// Mark State with tokens transferre
+	// Mark State with tokens transfered
 
 	if err := ctx.Set(e.transferTokenKey(owner), tx); err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
-	ctx.Logger().Info("Transfer From Response", err2)
-	return err2
+
+	return nil
 }
 
 func (e *EtherBoy) GetState(ctx contract.StaticContext, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
