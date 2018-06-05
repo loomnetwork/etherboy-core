@@ -100,6 +100,11 @@ func main() {
 		Use:   "get",
 		Short: "get state",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			var result txmsg.StateQueryResult
 			privKey, err := getPrivKey(privFile)
 			if err != nil {
@@ -114,7 +119,6 @@ func main() {
 				ChainID: rpcClient.GetChainID(),
 				Local:   loom.LocalAddressFromPublicKey(signer.PublicKey()),
 			}
-
 			if _, err := contract.StaticCall("GetState", params, callerAddr, &result); err != nil {
 				return err
 			}
