@@ -100,6 +100,17 @@ func main() {
 		Use:   "bal",
 		Short: "Balance",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			signer := auth.NewEd25519Signer(privKey)
+
+			callerAddr := loom.Address{
+				ChainID: rpcClient.GetChainID(),
+				Local:   loom.LocalAddressFromPublicKey(signer.PublicKey()),
+			}
 			encoder := base64.StdEncoding
 			addr := loom.LocalAddressFromPublicKey([]byte("0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d"))
 			fmt.Println("==")
@@ -113,19 +124,19 @@ func main() {
 			}
 			contract := client.NewContract(rpcClient, contractAddr)
 			addr1 := loom.MustParseAddress("default:" + user)
-			// "0xe9CF9552A580c7A79667f7F81D541Ecd6af2EBf9"
 
 			msg := &ctypes.BalanceOfRequest{
 				Owner: addr1.MarshalPB(),
 			}
 			var result ctypes.BalanceOfResponse
-			if _, err := contract.StaticCall("BalanceOf", msg, &result); err != nil {
+			if _, err := contract.StaticCall("BalanceOf", msg, callerAddr, &result); err != nil {
 				return err
 			}
 			fmt.Println(result.Balance.Value)
 			return nil
 		},
 	}
+	balCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	balCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
 
 	trnTokenCmd := &cobra.Command{
@@ -275,6 +286,37 @@ func main() {
 	}
 	keygenCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 
+	getTransferStateCmd := &cobra.Command{
+		Use:   "get-transfer-status",
+		Short: "get transfer state",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			var result txmsg.StateQueryResult
+			params := &txmsg.StateQueryParams{
+				Owner: user,
+			}
+
+			signer := auth.NewEd25519Signer(privKey)
+
+			callerAddr := loom.Address{
+				ChainID: rpcClient.GetChainID(),
+				Local:   loom.LocalAddressFromPublicKey(signer.PublicKey()),
+			}
+			if _, err := contract.StaticCall("GetTransferTokenStatus", params, callerAddr, &result); err != nil {
+				return err
+			}
+			fmt.Println(string(result.State))
+			return nil
+		},
+	}
+
+	getTransferStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	getTransferStateCmd.Flags().StringVarP(&user, "user", "u", "loom", "user")
+
 	rootCmd := &cobra.Command{
 		Use:   "etherboycli",
 		Short: "Etherboy cli tool",
@@ -287,5 +329,6 @@ func main() {
 	rootCmd.AddCommand(balCmd)
 	rootCmd.AddCommand(transferCmd)
 	rootCmd.AddCommand(trnTokenCmd)
+	rootCmd.AddCommand(getTransferStateCmd)
 	rootCmd.Execute()
 }

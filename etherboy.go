@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"github.com/golang/protobuf/proto"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	loom "github.com/loomnetwork/go-loom"
 	ctypes "github.com/loomnetwork/go-loom/builtin/types/coin"
@@ -131,18 +133,55 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 	if ok, _ := ctx.HasPermission([]byte(owner), []string{"owner"}); !ok {
 		return errors.New("Owner unverified")
 	}
-	// Verify Tokens Transfer Status
+	// Verify Tokens Transfer Transaction Status
 	if ctx.Has(e.transferTokenKey(owner)) {
 		return errors.New("Tokens already transferred")
 	}
+	h := sha256.New()
+	txReceipt, err := proto.Marshal(tx)
+	h.Write(txReceipt)
+	txHash := h.Sum(nil)
+
+	emitMsg := struct {
+		Owner   string
+		ToChain string
+		ToAddr  string
+		Hash    []byte
+	}{tx.Owner, tx.ToAddr.ChainId, string(tx.ToAddr.Local), txHash}
+
+	emitMsgJSON, err := json.Marshal(emitMsg)
+	if err != nil {
+		log.Println("Error marshalling emit message")
+	}
+	ctx.Emit(emitMsgJSON)
 
 	// Mark State with tokens transfered
-
-	if err := ctx.Set(e.transferTokenKey(owner), tx); err != nil {
+	addr := []byte(ctx.Message().Sender.Local)
+	state := txmsg.EtherboyAppState{
+		Address: addr,
+		Blob:    txHash,
+	}
+	err = ctx.Set(e.transferTokenKey(owner), tx)
+	if err != nil {
+		return errors.Wrap(err, "Error setting state")
+	}
+	err = ctx.Set(e.transferTokenHashKey(owner), &state)
+	if err != nil {
 		return errors.Wrap(err, "Error setting state")
 	}
 
 	return nil
+}
+
+func (e *EtherBoy) GetTransferTokenStatus(ctx contract.StaticContext, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
+	if ctx.Has(e.transferTokenHashKey(params.Owner)) {
+		var curState txmsg.EtherboyAppState
+		if err := ctx.Get(e.transferTokenHashKey(params.Owner), &curState); err != nil {
+			return nil, err
+		}
+		return &txmsg.StateQueryResult{State: curState.Blob}, nil
+	}
+	return &txmsg.StateQueryResult{}, nil
 }
 
 func (e *EtherBoy) GetState(ctx contract.StaticContext, params *txmsg.StateQueryParams) (*txmsg.StateQueryResult, error) {
@@ -166,6 +205,10 @@ func (s *EtherBoy) endGameKey(owner string) []byte {
 
 func (s *EtherBoy) transferTokenKey(owner string) []byte {
 	return []byte("transferToken:" + owner)
+}
+
+func (s *EtherBoy) transferTokenHashKey(owner string) []byte {
+	return []byte("transferTokenHash:" + owner)
 }
 
 var Contract plugin.Contract = contract.MakePluginContract(&EtherBoy{})
