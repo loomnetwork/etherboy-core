@@ -22,7 +22,7 @@ func getPrivKey(privKeyFile string) ([]byte, error) {
 }
 
 func main() {
-	var privFile, user string
+	var privFile, user, chainId string
 	var value int
 	//var value int
 
@@ -104,14 +104,14 @@ func main() {
 			params := &txmsg.StateQueryParams{
 				Owner: user,
 			}
-			if _, err := contract.StaticCall("GetState", params, &result); err != nil {
+			if _, err := contract.StaticCall("GetState", params, loom.RootAddress(chainId), &result); err != nil {
 				return err
 			}
 			fmt.Println(string(result.State))
 			return nil
 		},
 	}
-
+	getStateCmd.Flags().StringVarP(&chainId, "chain", "c", "default", "Chain Id")
 	getStateCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	getStateCmd.Flags().StringVarP(&user, "user", "u", "loom", "user")
 
