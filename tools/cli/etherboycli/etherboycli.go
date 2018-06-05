@@ -101,10 +101,21 @@ func main() {
 		Short: "get state",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var result txmsg.StateQueryResult
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			params := &txmsg.StateQueryParams{
 				Owner: user,
 			}
-			if _, err := contract.StaticCall("GetState", params, &result); err != nil {
+			signer := auth.NewEd25519Signer(privKey)
+			callerAddr := loom.Address{
+				ChainID: rpcClient.GetChainID(),
+				Local:   loom.LocalAddressFromPublicKey(signer.PublicKey()),
+			}
+
+			if _, err := contract.StaticCall("GetState", params, callerAddr, &result); err != nil {
 				return err
 			}
 			fmt.Println(string(result.State))
