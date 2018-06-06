@@ -1,9 +1,8 @@
 package main
 
 import (
-	// "encoding/json"
-	// "log"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -55,11 +54,12 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 	if err != nil {
 		log.Println("Error marshalling emit message")
 	}
-	ctx.Emit(emitMsgJSON)
+	ctx.Emit(emitMsgJSON, "etherboy:createaccount")
 	return nil
 }
 
 func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) error {
+	ctx.Logger().Debug(fmt.Sprintf("ctx: %v", ctx))
 	owner := strings.TrimSpace(tx.Owner)
 	var curState txmsg.EtherboyAppState
 	if err := ctx.Get(e.ownerKey(owner), &curState); err != nil {
@@ -84,7 +84,7 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err != nil {
 		ctx.Logger().Error("Error marshalling emit message", "error", err)
 	}
-	ctx.Emit(emitMsgJSON)
+	ctx.Emit(emitMsgJSON, "etherboy:savestate")
 
 	return nil
 }

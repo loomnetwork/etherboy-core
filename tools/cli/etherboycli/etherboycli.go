@@ -106,12 +106,15 @@ func main() {
 			}
 
 			var result txmsg.StateQueryResult
+			privKey, err := getPrivKey(privFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			params := &txmsg.StateQueryParams{
 				Owner: user,
 			}
-
 			signer := auth.NewEd25519Signer(privKey)
-
 			callerAddr := loom.Address{
 				ChainID: rpcClient.GetChainID(),
 				Local:   loom.LocalAddressFromPublicKey(signer.PublicKey()),
