@@ -38,6 +38,7 @@ make
 echo ${BUILD_NUMBER}
 echo ${JOB_NAME}
 
-gsutil cp run/contracts/etherboycore.so gs://private.delegatecall.com/etherboy/linux/build-$BUILD_NUMBER/etherboycore.so
 gsutil cp run/cmds/etherboycli gs://private.delegatecall.com/etherboy/linux/build-$BUILD_NUMBER/etherboycli
 gsutil cp run/contracts/etherboycore.0.0.1 gs://private.delegatecall.com/etherboy/linux/build-$BUILD_NUMBER/etherboycore.0.0.1
+gsutil cp run/cmds/etherboycli gs://private.delegatecall.com/etherboy/linux/latest/etherboycli
+gsutil cp run/contracts/etherboycore.0.0.1 gs://private.delegatecall.com/etherboy/linux/latest/etherboycore.0.0.1
