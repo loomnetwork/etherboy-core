@@ -54,7 +54,7 @@ func (e *EtherBoy) CreateAccount(ctx contract.Context, accTx *txmsg.EtherboyCrea
 	if err != nil {
 		log.Println("Error marshalling emit message")
 	}
-	ctx.Emit(emitMsgJSON, "etherboy:createaccount")
+	ctx.EmitTopics(emitMsgJSON, "etherboy:createaccount")
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (e *EtherBoy) SaveState(ctx contract.Context, tx *txmsg.EtherboyStateTx) er
 	if err != nil {
 		ctx.Logger().Error("Error marshalling emit message", "error", err)
 	}
-	ctx.Emit(emitMsgJSON, "etherboy:savestate")
+	ctx.EmitTopics(emitMsgJSON, "etherboy:savestate")
 
 	return nil
 }
