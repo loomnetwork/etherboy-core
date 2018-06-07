@@ -28,7 +28,7 @@ func getPrivKey(privKeyFile string) ([]byte, error) {
 }
 
 func main() {
-	var privFile, user string
+	var privFile, user, transferTo string
 	var value int
 	//var value int
 
@@ -66,8 +66,8 @@ func main() {
 	createAccCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
 	createAccCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
 
-	txCmd := &cobra.Command{
-		Use:   "tx",
+	endGameCmd := &cobra.Command{
+		Use:   "end-game",
 		Short: "send a transaction",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			privKey, err := getPrivKey(privFile)
@@ -93,8 +93,8 @@ func main() {
 			return nil
 		},
 	}
-	txCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
-	txCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
+	endGameCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	endGameCmd.Flags().StringVarP(&user, "user", "u", "", "user name")
 
 	balCmd := &cobra.Command{
 		Use:   "bal",
@@ -185,7 +185,8 @@ func main() {
 				log.Fatal(err)
 			}
 			//Address of etherboy contract
-			addr1 := loom.MustParseAddress("default:0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d")
+			// addr1 := loom.MustParseAddress("default:0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d")
+			addr1 := loom.MustParseAddress(transferTo)
 			amount := loom.NewBigUIntFromInt(10)
 			msg := &ctypes.TransferRequest{
 				To:     addr1.MarshalPB(),
@@ -201,6 +202,7 @@ func main() {
 		},
 	}
 	transferCmd.Flags().StringVarP(&privFile, "key", "k", "", "private key file")
+	transferCmd.Flags().StringVarP(&transferTo, "transfer", "t", "default:0xe288d6eec7150D6a22FDE33F0AA2d81E06591C4d", "Transfer To Wallet Addr")
 
 	setStateCmd := &cobra.Command{
 		Use:   "set",
@@ -325,7 +327,7 @@ func main() {
 	rootCmd.AddCommand(createAccCmd)
 	rootCmd.AddCommand(setStateCmd)
 	rootCmd.AddCommand(getStateCmd)
-	rootCmd.AddCommand(txCmd)
+	rootCmd.AddCommand(endGameCmd)
 	rootCmd.AddCommand(balCmd)
 	rootCmd.AddCommand(transferCmd)
 	rootCmd.AddCommand(trnTokenCmd)

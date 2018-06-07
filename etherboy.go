@@ -161,9 +161,10 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 	}
 	log.Println("BigUIntValue")
 	log.Println(resp.Balance.Value)
-	// if resp.Balance.Value != loom.NewBigUIntFromInt(0) {
-	// 	return errors.New("Tokens balance not zero.")
-	// }
+
+	if resp.Balance.Value.Int != loom.NewBigUIntFromInt(0).Int {
+		return errors.New("Tokens balance not zero.")
+	}
 
 	h := sha256.New()
 	txReceipt, err := proto.Marshal(tx)
