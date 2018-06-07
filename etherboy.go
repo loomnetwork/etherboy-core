@@ -130,6 +130,7 @@ func (e *EtherBoy) EndGame(ctx contract.Context, tx *txmsg.EtherboyEndGameTx) er
 func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransferTokenTx) error {
 	// Verify Owner
 	owner := strings.TrimSpace(tx.Owner)
+	addr := []byte(ctx.Message().Sender.Local)
 	if ok, _ := ctx.HasPermission([]byte(owner), []string{"owner"}); !ok {
 		return errors.New("Owner unverified")
 	}
@@ -137,6 +138,33 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 	if ctx.Has(e.transferTokenKey(owner)) {
 		return errors.New("Tokens already transferred")
 	}
+
+	//Verify EndGame is called
+	if !ctx.Has(e.endGameKey(owner)) {
+		return errors.New("Game not completed")
+	}
+
+	//Verify Account Balance
+	coinAddr, err := ctx.Resolve("coin")
+	if err != nil {
+		ctx.Logger().Error("Cannot load coin contract", err)
+		return err
+	}
+	balAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + ctx.Message().Sender.Local.String())
+	msg := &ctypes.BalanceOfRequest{
+		Owner: balAddr.MarshalPB(),
+	}
+	resp := &ctypes.BalanceOfResponse{}
+	if err := contract.StaticCallMethod(ctx, coinAddr, "BalanceOf", msg, resp); err != nil {
+		log.Println("Error calling coin contract")
+		return err
+	}
+	log.Println("BigUIntValue")
+	log.Println(resp.Balance.Value)
+	// if resp.Balance.Value != loom.NewBigUIntFromInt(0) {
+	// 	return errors.New("Tokens balance not zero.")
+	// }
+
 	h := sha256.New()
 	txReceipt, err := proto.Marshal(tx)
 	h.Write(txReceipt)
@@ -156,7 +184,7 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 	ctx.Emit(emitMsgJSON)
 
 	// Mark State with tokens transfered
-	addr := []byte(ctx.Message().Sender.Local)
+
 	state := txmsg.EtherboyAppState{
 		Address: addr,
 		Blob:    txHash,
