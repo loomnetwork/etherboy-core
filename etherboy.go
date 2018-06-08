@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/loomnetwork/etherboy-core/txmsg"
 	loom "github.com/loomnetwork/go-loom"
 	ctypes "github.com/loomnetwork/go-loom/builtin/types/coin"
@@ -107,7 +107,7 @@ func (e *EtherBoy) EndGame(ctx contract.Context, tx *txmsg.EtherboyEndGameTx) er
 	toAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + localAddr)
 	coinAddr, err := ctx.Resolve("coin")
 	if err != nil {
-		ctx.Logger().Info("Cannot load coin contract", err)
+		ctx.Logger().Error("Cannot load coin contract", err)
 		return err
 	}
 	msg := &ctypes.TransferRequest{
@@ -144,27 +144,40 @@ func (e *EtherBoy) TransferToken(ctx contract.Context, tx *txmsg.EtherboyTransfe
 		return errors.New("Game not completed")
 	}
 
-	//Verify Account Balance
+	//Transfer Balance to Escrow Account Address
 	coinAddr, err := ctx.Resolve("coin")
 	if err != nil {
 		ctx.Logger().Error("Cannot load coin contract", err)
 		return err
 	}
-	balAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + ctx.Message().Sender.Local.String())
-	msg := &ctypes.BalanceOfRequest{
-		Owner: balAddr.MarshalPB(),
+
+	localAddr := ctx.Message().Sender.Local.String()
+	toAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + localAddr)
+	amount := loom.NewBigUIntFromInt(1)
+	msg := &ctypes.TransferFromRequest{
+		From:   toAddr.MarshalPB(),
+		To:     loom.MustParseAddress("default:0x06D313A35B77B0Ef70d3741022f79E3f5A56A971").MarshalPB(),
+		Amount: &types.BigUInt{Value: *amount},
 	}
-	resp := &ctypes.BalanceOfResponse{}
-	if err := contract.StaticCallMethod(ctx, coinAddr, "BalanceOf", msg, resp); err != nil {
+	resp := &ctypes.TransferFromResponse{}
+	if err := contract.CallMethod(ctx, coinAddr, "TransferFrom", msg, resp); err != nil {
 		log.Println("Error calling coin contract")
 		return err
 	}
-	log.Println("BigUIntValue")
-	log.Println(resp.Balance.Value)
 
-	if resp.Balance.Value.Int != loom.NewBigUIntFromInt(0).Int {
-		return errors.New("Tokens balance not zero.")
-	}
+	// balAddr := loom.MustParseAddress(ctx.Message().Sender.ChainID + ":" + ctx.Message().Sender.Local.String())
+	// msg := &ctypes.BalanceOfRequest{
+	// 	Owner: balAddr.MarshalPB(),
+	// }
+	// resp := &ctypes.BalanceOfResponse{}
+	// if err := contract.StaticCallMethod(ctx, coinAddr, "BalanceOf", msg, resp); err != nil {
+	// 	log.Println("Error calling coin contract")
+	// 	return err
+	// }
+
+	// if resp.Balance.Value.Int != loom.NewBigUIntFromInt(0).Int {
+	// 	return errors.New("Tokens balance not zero.")
+	// }
 
 	h := sha256.New()
 	txReceipt, err := proto.Marshal(tx)
