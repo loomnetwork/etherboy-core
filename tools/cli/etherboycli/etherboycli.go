@@ -100,11 +100,6 @@ func main() {
 		Use:   "get",
 		Short: "get state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			privKey, err := getPrivKey(privFile)
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			var result txmsg.StateQueryResult
 			privKey, err := getPrivKey(privFile)
 			if err != nil {
