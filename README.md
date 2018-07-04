@@ -36,14 +36,16 @@ $LOOM_EXE init
 
 ## Creating an account and running transactions
 ```
+export ETHERBOY_CLI="path/to/etherbodycli"
+
 # create a key pair
-LOOM_CMDPLUGINDIR=cmds/ $LOOM_ADM genkey -a address.pub -k priv
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI genkey -k priv
 
 # send a create account tx
-LOOM_CMDPLUGINDIR=cmds/ $LOOM_ADM create-acct -a address.pub -k priv 
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI create-acct -k priv -u loom
 
 # send a set stage tx
-LOOM_CMDPLUGINDIR=cmds/ $LOOM_ADM set -v 1010 -a address.pub -k priv
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI set -v 1010 -k priv -u loom
 ```
 
 ## Regenerating Protobufs
