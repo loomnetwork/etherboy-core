@@ -39,13 +39,13 @@ $LOOM_EXE init
 export ETHERBOY_CLI="path/to/etherbodycli"
 
 # create a key pair
-LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI genkey  -k priv
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI genkey -k priv
 
 # send a create account tx
-LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI create-acct  -k priv -u loom
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI create-acct -k priv -u loom
 
 # send a set stage tx
-LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI set -v 1010  -k priv -u loom
+LOOM_CMDPLUGINDIR=cmds/ $ETHERBOY_CLI set -v 1010 -k priv -u loom
 ```
 
 ## Regenerating Protobufs
