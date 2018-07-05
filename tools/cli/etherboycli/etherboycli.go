@@ -14,8 +14,8 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var writeURI = fmt.Sprintf("http://%s:%d/rpc", "localhost", 46658)
-var readURI = fmt.Sprintf("http://%s:%d/query", "localhost", 46658)
+var writeURI = fmt.Sprintf("http://%s:%d/", "localhost", 46657)
+var readURI = fmt.Sprintf("http://%s:%d/query/", "localhost", 46657)
 
 func getPrivKey(privKeyFile string) ([]byte, error) {
 	return ioutil.ReadFile(privKeyFile)
